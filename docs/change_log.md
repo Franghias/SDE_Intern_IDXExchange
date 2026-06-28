@@ -1,0 +1,70 @@
+### This file is where you update changes you make to the project. Remember to also write down tasks from which week, dates, file paths, and any other relevant information. 
+
+#### 2026-06-23 — Week 1: Setup Database
+- Created `.env.example` with MySQL credentials (MYSQL_ROOT_PASSWORD, MYSQL_DATABASE, MYSQL_PORT)
+- Created `.env` from `.env.example` for local development
+- Created `.gitignore` to exclude `.env`, `node_modules/`, Docker volumes, and IDE files
+- Created `docker-compose.yml` at project root:
+  - MySQL 8 container named `idx-mysql-local` on port 3306
+  - Database `rets` created automatically
+  - SQL files auto-imported from `database/` directory via Docker's init mechanism
+  - Permissive `sql_mode=NO_AUTO_VALUE_ON_ZERO` for MariaDB-exported SQL compatibility
+  - Healthcheck configured to detect when import completes
+  - Named volume `mysql_data` for data persistence
+- Files: `docker-compose.yml`, `.env.example`, `.env`, `.gitignore`
+- **Fix:** Removed `--default-authentication-plugin=mysql_native_password` from `docker-compose.yml` — this flag was removed in MySQL 8.4
+- **Verified:** Import completed successfully:
+  - `rets_property`: **53,122 rows**, 120+ columns (address, price, beds, baths, photos, lat/lng, etc.)
+  - `rets_openhouse`: **4,282 rows**, 13 columns (listing ID, date, start/end time, all_data JSON, etc.)
+  - Both tables have primary keys and indexes on key columns (L_ListingID, L_City, L_Zip, L_DisplayId, L_Type_)
+
+#### 2026-06-24 — Week 2: Setup Backend + Basic REST API
+- Initialized Node.js project in `backend/` folder with `npm init`
+- Installed production dependencies: `express`, `mysql2`, `dotenv`, `cors`
+- Installed dev dependency: `nodemon`
+- Created `backend/.env` and `backend/.env.example` with database connection vars and server port
+- Created `backend/src/config/db.js` — MySQL connection pool using `mysql2/promise` (connectionLimit: 10)
+- Created `backend/src/routes/health.js` — `GET /api/health` endpoint:
+  - Runs `SELECT 1` to verify database connectivity
+  - Returns `{ status: "ok", database: "connected" }` on success
+  - Returns HTTP 500 with `{ status: "error", database: "disconnected", message: ... }` on failure
+- Created `backend/src/server.js` — Express entry point with `cors()` and `express.json()` middleware
+- Updated `.gitignore` to explicitly include `backend/.env`
+- Added `npm run dev` (nodemon) and `npm start` (node) scripts to `package.json`
+- Files: `backend/package.json`, `backend/.env`, `backend/.env.example`, `backend/src/server.js`, `backend/src/config/db.js`, `backend/src/routes/health.js`
+- Refactored Express app into `backend/src/app.js` (separated from `server.js`) for testability with supertest
+- Installed dev dependencies: `jest`, `supertest`
+- Created `backend/tests/health.test.js` with 5 tests:
+  - Health returns 200 with `{ status: "ok", database: "database is reachable" }` when DB is up
+  - Response has JSON content-type
+  - Returns 500 with `{ status: "error", database: "database unreachable" }` when DB is down (mocked)
+  - 500 response includes error message and does not crash the server
+  - Unknown routes return 404
+- Updated `package.json` test script: `jest --verbose --forceExit`
+
+#### 2026-06-26 — Week 3: Property Search Endpoint with Filters & Indexing
+- Created `database/add_indexes.sql` — SQL script to add indexes on `rets_property`:
+  - 3 single-column indexes: `idx_city` (L_City), `idx_zip` (L_Zip), `idx_price` (L_SystemPrice)
+  - 2 composite indexes: `idx_state_city_price` (L_State, L_City, L_SystemPrice), `idx_state_city_beds_baths_price` (L_State, L_City, L_Keyword2, LM_Dec_3, L_SystemPrice)
+  - All use `IF NOT EXISTS` for safe re-runs
+- Created `backend/src/routes/properties.js` — `GET /api/properties` endpoint:
+  - Pagination with `limit` (1–100, default 20) and `offset` (≥0, default 0)
+  - 7 filter params: `city`, `state`, `zipcode`, `minPrice`, `maxPrice`, `beds`, `baths`
+  - Input validation returns 400 with descriptive error messages for invalid values
+  - Data quality filters skip rows with NULL/blank values, invalid zips, negative prices/beds/baths, non-alphabetic city/state
+  - City and State normalized to Title Case; case-insensitive matching with `LOWER()`
+  - All queries use parameterized `?` placeholders (no string concatenation)
+  - Response: `{ total, limit, offset, results: [...] }` ordered by price descending
+- Modified `backend/src/app.js` — mounted properties router at `/api/properties`
+- Created `backend/tests/properties.test.js` — 17 tests covering:
+  - Default pagination (20 results with total/limit/offset)
+  - Custom limit/offset
+  - City, state, zipcode, price range, beds, baths filters
+  - Combined filters
+  - 8 validation error cases (400 responses)
+  - Parameterized query verification (values not in SQL string)
+  - Database error handling (500 response)
+- Created `backend/tests/explain_indexes.js` — manual EXPLAIN verification script:
+  - Run with `node tests/explain_indexes.js` after applying indexes
+  - Tests 6 queries and displays whether indexes are used (key column)
+- Files: `database/add_indexes.sql`, `backend/src/routes/properties.js`, `backend/src/app.js`, `backend/tests/properties.test.js`, `backend/tests/explain_indexes.js`

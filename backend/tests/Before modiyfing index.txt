@@ -1,0 +1,88 @@
+PS C:\Users\User\Downloads\IDXExchange - SDE Intern\backend> node .\tests\explain_indexes.js
+◇ injected env (6) from .env // tip: ⌘ enable debugging { debug: true }
+======================================================================
+Week 3 — EXPLAIN Index Verification
+======================================================================
+
+──────────────────────────────────────────────────────────────────────
+📋 BEFORE INDEXES — Show current indexes on rets_property
+   SQL: SHOW INDEXES FROM rets_property
+──────────────────────────────────────────────────────────────────────
+   Found 7 indexes:
+   - PRIMARY (id, Seq: 1)
+   - idx_L_ListingID (L_ListingID, Seq: 1)
+   - idx_L_City (L_City, Seq: 1)
+   - idx_L_Zip (L_Zip, Seq: 1)
+   - idx_L_DisplayId (L_DisplayId, Seq: 1)
+   - idx_rets_property_type (L_Type_, Seq: 1)
+   - ft_remarks (L_Remarks, Seq: 1)
+
+──────────────────────────────────────────────────────────────────────
+📋 Query 1 — City filter only (should use idx_city or composite)
+   SQL: EXPLAIN SELECT * FROM rets_property WHERE L_City = ?
+   Params: [Portland]
+──────────────────────────────────────────────────────────────────────
+   type: ref
+   possible_keys: idx_L_City
+   key: idx_L_City
+   rows: 1
+   Extra:
+
+──────────────────────────────────────────────────────────────────────
+📋 Query 2 — Zipcode filter (should use idx_zip)
+   SQL: EXPLAIN SELECT * FROM rets_property WHERE L_Zip = ?
+   Params: [97201]
+──────────────────────────────────────────────────────────────────────
+   type: ref
+   possible_keys: idx_L_Zip
+   key: idx_L_Zip
+   rows: 1
+   Extra:
+
+──────────────────────────────────────────────────────────────────────
+📋 Query 3 — Price range (should use idx_price)
+   SQL: EXPLAIN SELECT * FROM rets_property WHERE L_SystemPrice >= ? AND L_SystemPrice <= ?
+   Params: [300000, 500000]
+──────────────────────────────────────────────────────────────────────
+   type: ALL
+   possible_keys: None
+   key: NULL ⚠️  NO INDEX USED
+   rows: 35760
+   Extra: Using where
+
+──────────────────────────────────────────────────────────────────────
+📋 Query 4 — State + City + Price range (should use idx_state_city_price)
+   SQL: EXPLAIN SELECT * FROM rets_property WHERE L_State = ? AND L_City = ? AND L_SystemPrice >= ?
+   Params: [Oregon, Portland, 300000]
+──────────────────────────────────────────────────────────────────────
+   type: ref
+   possible_keys: idx_L_City
+   key: idx_L_City
+   rows: 1
+   Extra: Using where
+
+──────────────────────────────────────────────────────────────────────
+📋 Query 5 — State + City + Beds + Baths + Price (should use idx_state_city_beds_baths_price)
+   SQL: EXPLAIN SELECT * FROM rets_property WHERE L_State = ? AND L_City = ? AND L_Keyword2 >= ? AND LM_Dec_3 >= ? AND L_SystemPrice >= ?
+   Params: [Oregon, Portland, 3, 2, 300000]
+──────────────────────────────────────────────────────────────────────
+   type: ref
+   possible_keys: idx_L_City
+   key: idx_L_City
+   rows: 1
+   Extra: Using where
+
+──────────────────────────────────────────────────────────────────────
+📋 Query 6 — Full filter query (as the API would run it)
+   SQL: EXPLAIN SELECT L_ListingID AS listingId, L_SystemPrice AS listPrice, L_Address AS address, L_City AS city, L_State AS state, L_Zip AS zipCode, L_Keyword2 AS beds, LM_Dec_3 AS baths, LM_Int2_3 AS sqft FROM rets_property WHERE L_City IS NOT NULL AND L_City != '' AND L_State IS NOT NULL AND L_State != '' AND L_Zip IS NOT NULL AND L_Zip != '' AND L_Zip REGEXP '^[0-9]{5}$' AND L_SystemPrice IS NOT NULL AND L_SystemPrice >= 0 AND L_Keyword2 IS NOT NULL AND L_Keyword2 >= 0 AND LM_Dec_3 IS NOT NULL AND LM_Dec_3 >= 0 AND L_City REGEXP '^[A-Za-z ]+$' AND L_State REGEXP '^[A-Za-z ]+$' AND LOWER(L_City) = LOWER(?) AND L_SystemPrice >= ? AND L_SystemPrice <= ? AND L_Keyword2 = ? AND LM_Dec_3 = ? ORDER BY L_SystemPrice DESC LIMIT ? OFFSET ?
+   Params: [Portland, 300000, 500000, 3, 2, 20, 0]
+──────────────────────────────────────────────────────────────────────
+   type: range
+   possible_keys: idx_L_City,idx_L_Zip
+   key: idx_L_Zip
+   rows: 17881
+   Extra: Using index condition; Using where; Using MRR; Using filesort
+
+======================================================================
+Done. Check that "key" is NOT NULL for EXPLAIN queries.
+======================================================================

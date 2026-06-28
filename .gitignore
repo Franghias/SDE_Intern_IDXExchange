@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Database
+database/
+*.sql
+*.sqlc
+
+# Environment variables
+.env
+backend/.env
+
+# Docker volume data
+mysql_data/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo

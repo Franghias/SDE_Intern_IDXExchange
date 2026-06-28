@@ -1,0 +1,58 @@
+### WEEK 1: SETUP DATABASE
+#### Requirements
+- Start a MySQL 8 container named idx-mysql-local on port 3306 with a database called rets. (Use docker-compose)
+- Import the schema from rets_property.sql and rets_openhouse.sql into the database
+(run rest_openhouse.sql and rest_property.sql in the database directory)
+#### Deliverables
+- Show the database schema and verify that the database contains data by running some basic queries.
+
+
+### WEEK 2: SETUP BACKEND + BASIC REST API
+#### Requirements
+- Initialize a Node.js project in a backend/ folder
+- Install express, mysql2, dotenv, and cors. Install nodemon as a dev dependency
+<!-- - Create an example .env file with my database credentials -->
+<!-- - Create a README.md file to document the project -->
+- Create a MySQL connection pool module
+- Create a GET /api/health endpoint that queries the database and returns connection status
+- Server must auto-restart on file changes during development
+#### Deliverables
+- npm run dev starts the server without errors
+- GET /api/health returns { status: "ok", database: "connected" } when MySQL
+is running
+- GET /api/health returns a 500 error (not a crash) when MySQL is unreachable
+- .env is listed in .gitignore
+
+
+### WEEK 3: PROPERTY SEARCH ENDPOINT WITH FILTERS & INDEXING
+#### Requirements
+- Create a properties route file and mount it at /api/properties
+- Implement GET /api/properties with pagination (limit and offset query params)
+- Add filter support for: city, zipcode, minPrice, maxPrice, beds, baths
+- Validate all query parameters — return 400 with a descriptive message for invalid inputs
+- Create database indexes on the columns you filter by
+- Measure query performance before and after adding indexes using EXPLAIN
+#### Deliverables
+- GET /api/properties returns 20 properties by default with a total count
+- Pagination works: ?limit=10&offset=20 returns properties 21-30
+- Filtering works: ?city=Portland returns only Portland properties
+- Multiple filters combine: ?city=Portland&minPrice=300000&beds=3
+- Invalid inputs return 400: ?minPrice=abc, ?limit=0, ?limit=200
+- All filter values use parameterized queries (no string concatenation)
+- SHOW INDEXES FROM rets_property shows your new indexes
+- EXPLAIN shows your indexes are being used (key column is not NULL)
+#### Example
+When giving an example request to the API, use the following format:
+```
+GET /api/properties?city=Portland&minPrice=300000&beds=3&limit=20&offset=0
+```
+
+Response:
+```
+{
+"total": 87,
+"limit": 20,
+"offset": 0,
+"results": [...]
+}
+```
