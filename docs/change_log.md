@@ -68,3 +68,26 @@
   - Run with `node tests/explain_indexes.js` after applying indexes
   - Tests 6 queries and displays whether indexes are used (key column)
 - Files: `database/add_indexes.sql`, `backend/src/routes/properties.js`, `backend/src/app.js`, `backend/tests/properties.test.js`, `backend/tests/explain_indexes.js`
+
+#### 2026-06-29 — Week 4: Property Detail & Open House Endpoints
+- Created `backend/src/middleware/requestLogger.js` — request logging middleware:
+  - Logs every request with timestamp, method, URL, status code, and duration in ms
+  - Format: `[ISO timestamp] GET /api/properties/12345 200 45ms`
+  - Uses `res.on('finish', ...)` to capture final status code after response completes
+- Modified `backend/src/app.js` — registered `requestLogger` middleware globally before route handlers
+- Modified `backend/src/routes/properties.js` — added two new endpoints:
+  - `GET /api/properties/:id` — returns full property detail by `L_DisplayId` or 404
+  - `GET /api/properties/:id/openhouses` — returns open house events for a property
+  - Added `isValidListingId(id)` — validates ID is alphanumeric, max 20 chars (returns 400 if invalid)
+  - Route order: `/:id/openhouses` registered before `/:id` to prevent Express capturing "openhouses" as `:id`
+  - Listing ID logic: if `L_ListingID === L_DisplayId`, use `L_DisplayId`; else use `L_ListingID`
+  - Date logic: if `OpenHouseDate === OH_StartDate === OH_EndDate`, use `OpenHouseDate`; else use `OH_StartDate`
+  - Open houses ordered by `OpenHouseDate ASC, OH_StartTime ASC`
+  - `OPEN_HOUSE_ALL_DATA_KEYS` array controls which keys from `all_data` JSON are extracted (configurable)
+  - `extractAllData()` parses `all_data` JSON and returns only selected keys; gracefully handles invalid JSON
+- Created `backend/tests/propertyDetail.test.js` — 16 tests covering:
+  - Property detail: valid ID (200), unknown ID (404), malformed ID (400), oversized ID (400), DB error (500), parameterized query
+  - Open houses: valid response, empty array (200 not 404), date fallback logic, listing ID fallback logic, SQL ordering, malformed ID (400), invalid JSON handling, DB error (500)
+  - Request logging: logs method/URL/status/duration, logs 404 for unknown routes
+- Files: `backend/src/middleware/requestLogger.js`, `backend/src/app.js`, `backend/src/routes/properties.js`, `backend/tests/propertyDetail.test.js`
+

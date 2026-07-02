@@ -57,7 +57,16 @@ CREATE TABLE `rets_openhouse` (
   - State or City is not alphabetic.
 
 
-<!-- ### WEEK 4: PROPERTY DETAIL & OPEN HOUSE ENDPOINTS -->
+### WEEK 4: PROPERTY DETAIL & OPEN HOUSE ENDPOINTS
+- Some columns in `rets_openhouse` table:
+  - `OpenHouseDate`, `OH_StartDate`, `OH_EndDate` format YYYY-MM-DD
+  - `OH_StartTime` and `OH_EndTime` format example: 0 days 14:00:00
+  - `API_OH_StartDate` and `API_OH_EndDate` format example: YYYY-MM-DD HH:MM:SS
+  - `all_data` is JSON Blob. Example: {"key":"value", "key2":"value2", ...etc}
+
+- Check if all three columns `OpenHouseDate`, `OH_StartDate`, `OH_EndDate` have the same value then **ONLY** use `OpenHouseDate`, else use `OH_StartDate`.
+- Check if two columns `L_ListingID` and `L_DisplayId` have the same value then **ONLY** use `L_DisplayId`, else use `L_ListingID`.
+
 
 <!-- ### WEEK 5: REACT SETUP + LISTINGS PAGE -->
 

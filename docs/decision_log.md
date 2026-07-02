@@ -85,3 +85,43 @@
 - Connects to the live database and runs EXPLAIN on 6 representative queries
 - Prints index usage details (key, possible_keys, rows) for manual verification
 - Kept separate from unit tests since it requires a running MySQL instance
+
+#### 2026-06-29 — Week 4: Property Detail & Open House Endpoints
+
+**Decision: Use `L_DisplayId` for property lookup, with fallback logic for open houses**
+- The `:id` route parameter is matched against `L_DisplayId` in both `rets_property` and `rets_openhouse`
+- For open house listing ID display: if `L_ListingID === L_DisplayId`, use `L_DisplayId`; otherwise use `L_ListingID`
+- Per SUPPORT_TASKS.md guidance and user clarification
+
+**Decision: Date column selection logic for open houses**
+- If all three date columns (`OpenHouseDate`, `OH_StartDate`, `OH_EndDate`) are equal, use `OpenHouseDate`
+- If they differ, use `OH_StartDate` as the display date
+- In practice, the sample data shows all three are always equal, but the fallback handles edge cases
+
+**Decision: Configurable `all_data` key extraction**
+- All keys from the `all_data` JSON blob are extracted via a configurable `OPEN_HOUSE_ALL_DATA_KEYS` array
+- Adding or removing a key from this array controls which fields appear in the API response
+- Designed for easy future modification without changing logic — just edit the array
+- Invalid JSON in `all_data` returns an empty object (graceful degradation, no error)
+
+**Decision: ID validation — alphanumeric, max 20 characters**
+- Listing IDs in the database are numeric strings (~10 digits)
+- Validation accepts alphanumeric characters up to 20 chars to allow some flexibility
+- Special characters, empty strings, and oversized IDs return 400
+- Same validation function (`isValidListingId`) is reused by both `/:id` and `/:id/openhouses`
+
+**Decision: Route registration order — openhouses before :id**
+- `/:id/openhouses` is registered before `/:id` in the Express router
+- Without this, Express would match `/:id` first and treat "openhouses" as a property ID
+- Per TASKS.md requirement: "Route order is correct — /openhouses must be registered before /:id"
+
+**Decision: Request logger as global middleware**
+- Created as a separate middleware file (`middleware/requestLogger.js`) rather than inline in `app.js`
+- Registered globally with `app.use()` before all route handlers
+- Uses `res.on('finish')` to capture the final status code and compute elapsed time
+- Follows Ponytail principle: separate file keeps `app.js` focused on wiring
+
+**Decision: No separate route file for detail endpoints**
+- Both `/:id` and `/:id/openhouses` are added to the existing `properties.js` router
+- They're sub-routes of `/api/properties`, so they belong in the same file
+- Follows Ponytail principle: avoid unnecessary files

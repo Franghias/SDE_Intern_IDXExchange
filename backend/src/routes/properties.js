@@ -228,4 +228,169 @@ router.get('/', async (req, res) => {
   }
 });
 
+/**
+ * Validate a listing ID parameter.
+ * Must be non-empty, numeric only, and at most 20 characters.
+ */
+function isValidListingId(id) {
+  return typeof id === 'string' && id.length > 0 && id.length <= 20 && /^[0-9]+$/.test(id);
+}
+
+/**
+ * Keys to extract from the open house `all_data` JSON blob.
+ * Add or remove entries here to control which fields are returned.
+ */
+const OPEN_HOUSE_ALL_DATA_KEYS = [
+  'OpenHouseRemarks',
+  'OffMarketDate',
+  'AppointmentRequiredYN',
+  'PropertyType',
+  'OpenHouseStatus',
+  'OpenHouseType',
+  'PropertySubTypeAdditional',
+  'OpenHouseAttendedBy',
+  'PropertySubType',
+  'LivestreamOpenHouseURL',
+];
+
+/**
+ * Extract selected keys from the all_data JSON string.
+ * Returns an object with only the keys listed in OPEN_HOUSE_ALL_DATA_KEYS.
+ */
+function extractAllData(allDataStr) {
+  try {
+    const parsed = JSON.parse(allDataStr);
+    const result = {};
+    for (const key of OPEN_HOUSE_ALL_DATA_KEYS) {
+      if (key in parsed) {
+        result[key] = parsed[key];
+      }
+    }
+    return result;
+  } catch {
+    return {};
+  }
+}
+
+// GET /api/properties/:id/openhouses — open house events for a property
+// Registered BEFORE /:id so Express doesn't capture "openhouses" as an :id
+router.get('/:id/openhouses', async (req, res) => {
+  const { id } = req.params;
+
+  if (!isValidListingId(id)) {
+    return res.status(400).json({
+      status: 'error',
+      message: 'Listing ID must be numeric and at most 20 characters',
+    });
+  }
+
+  try {
+    const sql = `
+      SELECT
+        L_ListingID,
+        L_DisplayId,
+        OpenHouseDate,
+        OH_StartDate,
+        OH_EndDate,
+        OH_StartTime   AS startTime,
+        OH_EndTime     AS endTime,
+        all_data
+      FROM rets_openhouse
+      WHERE L_DisplayId = ?
+      ORDER BY OpenHouseDate ASC, OH_StartTime ASC
+    `;
+    const [rows] = await pool.query(sql, [id]);
+
+    const openHouses = rows.map((row) => {
+      // Listing ID: if L_ListingID == L_DisplayId use L_DisplayId, else use L_ListingID
+      const listingId = row.L_ListingID === row.L_DisplayId
+        ? row.L_DisplayId
+        : row.L_ListingID;
+
+      // Date: if all three equal use OpenHouseDate, else use OH_StartDate
+      const allDatesEqual =
+        row.OpenHouseDate != null &&
+        row.OH_StartDate != null &&
+        row.OH_EndDate != null &&
+        row.OpenHouseDate.toString() === row.OH_StartDate.toString() &&
+        row.OpenHouseDate.toString() === row.OH_EndDate.toString();
+      const date = allDatesEqual ? row.OpenHouseDate : row.OH_StartDate;
+
+      // Extract selected fields from all_data JSON
+      const details = extractAllData(row.all_data);
+
+      return {
+        listingId,
+        date,
+        startTime: row.startTime,
+        endTime: row.endTime,
+        ...details,
+      };
+    });
+
+    res.json({ listingId: id, openHouses });
+  } catch (err) {
+    console.error('Open houses query failed:', err.message);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to fetch open houses',
+    });
+  }
+});
+
+// GET /api/properties/:id — single property detail
+router.get('/:id', async (req, res) => {
+  const { id } = req.params;
+
+  if (!isValidListingId(id)) {
+    return res.status(400).json({
+      status: 'error',
+      message: 'Listing ID must be numeric and at most 20 characters',
+    });
+  }
+
+  try {
+    const sql = `
+      SELECT
+        L_ListingID        AS listingId,
+        L_DisplayId        AS displayId,
+        L_Address          AS address,
+        L_City             AS city,
+        L_State            AS state,
+        L_Zip              AS zipCode,
+        L_SystemPrice      AS listPrice,
+        L_Keyword2         AS beds,
+        LM_Dec_3           AS baths,
+        LM_Int2_3          AS sqft,
+        YearBuilt          AS yearBuilt,
+        L_Remarks          AS description,
+        L_Photos           AS photos,
+        LMD_MP_Latitude    AS latitude,
+        LMD_MP_Longitude   AS longitude,
+        L_Type_            AS propertyType,
+        L_Status           AS status
+      FROM rets_property
+      WHERE L_DisplayId = ?
+      LIMIT 1
+    `;
+    const [rows] = await pool.query(sql, [id]);
+
+    if (rows.length === 0) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Property not found',
+      });
+    }
+
+    res.json(rows[0]);
+  } catch (err) {
+    console.error('Property detail query failed:', err.message);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to fetch property',
+    });
+  }
+});
+
 module.exports = router;
+
