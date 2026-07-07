@@ -1,5 +1,5 @@
 Backend: Node.js + Express 
-Frontend: React (Create React App) 
+Frontend: React (Use Vite) 
 Database: MySQL8 running in Docker
 Testing: Jest + React Testing Library + Supertes
 

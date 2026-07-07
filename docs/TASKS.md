@@ -97,91 +97,12 @@ When giving an example request to the API, use the following format:
 ```
 GET /api/properties?limit=20&offset=0
 ```
-Response:
+Example response from backend:
 ```
 {
     "total": 487,
     "limit": 20,
     "offset": 0,
-    "results": [
-        {
-            "propertyId": 100002222,
-            "listPrice": 459900,
-            "address": "123 Main St",
-            "city": "Portland",
-            "state": "OR",
-            "postalCode": "97201",
-            "bedrooms": 3,
-            "bathrooms": 2,
-            "sqft": 1500,
-            "photos": ["https://example.com/photo1.jpg", ...]
-        }
-    ]
+    "results": [...]
 }
 ```
-
-
-### WEEK 6: FILTERS UI + TESTING
-#### Requirements
-- Build a PropertyFilters component with inputs for: city, ZIP code, min price, max price, beds (dropdown), baths (dropdown)
-- Integrate filters into the ListingsPage — searching updates the property list
-- A "Clear Filters" button resets the form and reloads all properties
-- Write 4 unit tests for your API client module
-- Write 4 unit tests for the PropertyFilters component
-#### Deliverables
-- Filter form displays all six inputs
-- Submitting the form fetches new results matching the filters
-- Multiple filters can be combined
-- Empty filter values are not sent to the API
-- Clear button resets the form and results
-- No properties found state shows a helpful message
-- npm test passes all tests
-
-
-### WEEK 7: PAGINATION UI + COMPONENT TESTING
-#### Requirements  
-- Add pagination state to ListingsPage (currentPage, itemsPerPage)
-- Build a Pagination component that displays page numbers, previous/next
-buttons, and ellipsis for large page counts
-- Changing pages must scroll to top and preserve active filters
-- Changing filters must reset to page 1
-- Write tests covering all Pagination component behaviors
-#### Deliverables
-- Pagination controls appear below the property grid
-- Previous is disabled on page 1; Next is disabled on the last page
-- Clicking a page number navigates to that page
-- Page numbers use ellipsis correctly for large counts (e.g. 1 ... 4 5 6 ... 24)
-- Results summary shows "Showing X-Y of Z properties"
-- Applying new filters resets to page 1
-- Pagination is hidden when there is only one page
-- All component tests pass
-
-
-### WEEK 8: PROPERTY DETAIL PAGE END-TO-END
-#### Requirements: 
-- Install React Router and set up routes: / for ListingsPage, /property/:id for PropertyDetailPage
-- Make property cards clickable — clicking navigates to the detail page
-- Build PropertyDetailPage displaying: price, address, stats (beds/baths/sqft/year built), description, property details, and open houses
-- Build a PropertyImageCarousel component for listing cards (multiple photos, prev/next arrows, counter)
-- Build a PropertyImageGallery component for the detail page (main image, thumbnail strip, lightbox on click)
-- Both photo components must parse L_Photos from its JSON array format
-- Build a PropertyMap component using the Google Maps Embed API (iframe-based, no npm package)
-- Display the map on the detail page using LMD_MP_Latitude and LMD_MP_Longitude
-- Display open houses with date, start/end time, and remarks (remarks are inside the all_data JSON field)
-- Add the key to frontend/.env as REACT_APP_GOOGLE_MAPS_API_KEY=your_key
-- Restrict the key to localhost:3000 and the Maps Embed API only
-### Deliverables:
-- Clicking a card navigates to /property/[listing-id]
-- Back button returns to the listings page
-- Detail page shows all property fields listed above
-- PropertyImageCarousel: arrow buttons cycle through photos, counter shows X / Y
-- PropertyImageCarousel: arrows do not navigate to the detail page (stopPropagation)
-- PropertyImageGallery: thumbnail strip scrolls, clicking a thumbnail updates main image
-- PropertyImageGallery: clicking main image opens a full-screen lightbox
-- Lightbox closes on click-outside or Escape key; left/right arrows navigate photos
-- PropertyMap renders an iframe with the correct property location
-- Map only renders when both lat and lng are present
-- Get Directions link opens Google Maps in a new tab
-- Open houses show date, formatted times, and remarks if available
-- If no open houses, shows "No open houses scheduled"
-- Visiting /property/invalid-id shows an error, not a crash

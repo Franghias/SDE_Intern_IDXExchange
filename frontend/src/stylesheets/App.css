@@ -1,0 +1,22 @@
+.app-header {
+  padding: 32px 24px 24px;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.app-header__title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--color-text);
+  letter-spacing: -0.02em;
+}
+
+.app-header__title span {
+  color: var(--color-primary);
+}
+
+.app-header__subtitle {
+  font-size: 0.95rem;
+  color: var(--color-text-muted);
+  margin-top: 4px;
+}

@@ -1,0 +1,89 @@
+.property-card {
+  background: var(--color-surface);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  cursor: pointer;
+}
+
+.property-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+}
+
+/* Image */
+.property-card__image-wrapper {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: var(--color-skeleton);
+}
+
+.property-card__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.35s ease;
+}
+
+.property-card:hover .property-card__image {
+  transform: scale(1.05);
+}
+
+/* Price badge */
+.property-card__price-badge {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  background: var(--color-primary);
+  color: #fff;
+  font-weight: 700;
+  font-size: 1.05rem;
+  padding: 6px 14px;
+  border-radius: 8px;
+  letter-spacing: 0.01em;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+/* Body */
+.property-card__body {
+  padding: 16px 20px 20px;
+}
+
+.property-card__address {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.property-card__location {
+  font-size: 0.88rem;
+  color: var(--color-text-muted);
+  margin: 0 0 14px;
+}
+
+/* Stats row */
+.property-card__stats {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+}
+
+.property-card__stat strong {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.property-card__divider {
+  color: var(--color-border);
+  font-size: 0.75rem;
+}

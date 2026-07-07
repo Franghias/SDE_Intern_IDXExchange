@@ -91,3 +91,42 @@
   - Request logging: logs method/URL/status/duration, logs 404 for unknown routes
 - Files: `backend/src/middleware/requestLogger.js`, `backend/src/app.js`, `backend/src/routes/properties.js`, `backend/tests/propertyDetail.test.js`
 
+#### 2026-07-02 — Week 5: React Setup + Listings Page
+- Modified `backend/src/routes/properties.js` — added `L_Photos AS photos` and `L_DisplayId AS propertyId` to the `GET /api/properties` SELECT query
+- Scaffolded React app in `frontend/` using Vite (`npx create-vite --template react`)
+- Configured `frontend/vite.config.js`:
+  - Dev server runs on port 3000
+  - Proxy `/api` requests to Express backend at `http://localhost:5000`
+- Updated `frontend/index.html` — added page title "IDXExchange — Property Listings", meta description, and Inter font from Google Fonts
+- Created `frontend/src/api/propertyApi.js` — API client module:
+  - `fetchProperties({ limit, offset })` calls `GET /api/properties` with query params
+  - Handles network errors (backend unreachable) with meaningful message
+  - Handles HTTP errors (4xx/5xx) and extracts error message from response body
+- Created `frontend/src/utils/format.js` — shared utility functions:
+  - `parsePhotos(str)` — parses `L_Photos` JSON string into an array, returns `[]` on invalid input
+  - `formatPrice(price)` — formats number as USD currency (`$459,900`)
+- Created `frontend/src/components/PropertyCard.jsx` — property card component:
+  - Displays first photo from parsed `L_Photos` JSON array
+  - Shows price badge overlay, address, city/state/zip, beds/baths/sqft stats
+  - Fallback placeholder image when no photos available
+  - Hover effect: translateY + shadow + image zoom
+- Created `frontend/src/stylesheets/PropertyCard.css` — card styles
+- Created `frontend/src/pages/ListingsPage.jsx` — listings page component:
+  - Loading state with spinner, error state with message, data state with card grid
+  - Property count display: "Showing 20 of 487 properties"
+  - Uses `useEffect` with cancellation flag to prevent stale state updates
+- Created `frontend/src/stylesheets/ListingsPage.css` — responsive grid (3→2→1 columns)
+- Created `frontend/src/App.jsx` — app root with branded header
+- Updated `frontend/src/stylesheets/index.css` — global design tokens (dark theme) and CSS reset
+- Updated `frontend/src/stylesheets/App.css` — app header styles
+- Files: `backend/src/routes/properties.js`, `frontend/vite.config.js`, `frontend/index.html`, `frontend/src/api/propertyApi.js`, `frontend/src/utils/format.js`, `frontend/src/components/PropertyCard.jsx`, `frontend/src/stylesheets/PropertyCard.css`, `frontend/src/pages/ListingsPage.jsx`, `frontend/src/stylesheets/ListingsPage.css`, `frontend/src/App.jsx`, `frontend/src/stylesheets/App.css`, `frontend/src/stylesheets/index.css`, `frontend/src/main.jsx`
+
+#### 2026-07-07 — Week 6: CSS Consolidation
+- Moved all CSS files into `frontend/src/stylesheets/` directory:
+  - `src/index.css` → `src/stylesheets/index.css`
+  - `src/App.css` → `src/stylesheets/App.css`
+  - `src/components/PropertyCard.css` → `src/stylesheets/PropertyCard.css`
+  - `src/pages/ListingsPage.css` → `src/stylesheets/ListingsPage.css`
+- Updated import paths in `main.jsx`, `App.jsx`, `PropertyCard.jsx`, and `ListingsPage.jsx` to reference new stylesheet locations
+- Updated `frontend/README.md` and root `README.md` file structure trees to reflect new layout
+- Files: `frontend/src/stylesheets/index.css`, `frontend/src/stylesheets/App.css`, `frontend/src/stylesheets/PropertyCard.css`, `frontend/src/stylesheets/ListingsPage.css`

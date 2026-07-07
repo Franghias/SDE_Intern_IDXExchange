@@ -125,3 +125,47 @@
 - Both `/:id` and `/:id/openhouses` are added to the existing `properties.js` router
 - They're sub-routes of `/api/properties`, so they belong in the same file
 - Follows Ponytail principle: avoid unnecessary files
+
+#### 2026-07-02 — Week 5: React Setup + Listings Page
+
+**Decision: Use Vite instead of Create React App**
+- ARCHITECTURE.md originally said "Create React App" but CRA is deprecated and unmaintained
+- User confirmed switch to Vite — faster builds, active maintenance, native ES modules
+- Updated ARCHITECTURE.md to reflect "React (Use Vite)"
+- Template: `react` (JavaScript, not TypeScript — consistent with backend)
+
+**Decision: Vite proxy for API requests**
+- Configured `vite.config.js` with `server.proxy` to forward `/api` → `http://localhost:5000`
+- Avoids CORS issues during development without touching backend config
+- Frontend fetch calls use relative paths (`/api/properties`) — no hardcoded base URL
+- Vite dev server runs on port 3000 (matching the deliverable requirement)
+
+**Decision: Keep backend field names, adapt frontend**
+- User confirmed: do NOT rename backend response fields (`listingId`, `zipCode`, `beds`, `baths`)
+- Frontend components use the backend field names directly
+- Added `L_Photos AS photos` and `L_DisplayId AS propertyId` to the listing query (new fields, not renames)
+
+**Decision: Parse L_Photos on the frontend**
+- `L_Photos` is stored as a JSON string in MySQL and returned as a raw string by the backend
+- Frontend `parsePhotos()` utility handles `JSON.parse()` with graceful fallback to `[]`
+- Avoids adding JSON parsing logic to the listing endpoint (which returns many rows)
+- Per Ponytail principle: keep functions short and focused
+
+**Decision: Extract shared utilities into `utils/format.js`**
+- `parsePhotos()` and `formatPrice()` extracted to avoid duplication if reused in later weeks
+- Both are pure functions with no side effects — easy to test
+- Follows Ponytail principle: reuse, avoid duplication
+
+**Decision: Dark theme design system with CSS custom properties**
+- All colors, fonts, and spacing defined as CSS custom properties in `stylesheets/index.css`
+- Components reference these tokens instead of hardcoding values
+- Makes future theme changes (or light mode) a single-file edit
+- Vanilla CSS per user preference — no CSS framework
+
+#### 2026-07-07 — Week 6: CSS Consolidation
+
+**Decision: Consolidate all CSS files into `src/stylesheets/` directory**
+- Moved `index.css`, `App.css`, `PropertyCard.css`, and `ListingsPage.css` from their co-located positions into a single `stylesheets/` directory
+- Co-location (CSS next to its component) is common in React projects, but a centralized stylesheet directory provides a single place to manage all styles
+- Makes it easier to find and audit all CSS in one directory rather than searching across `src/`, `components/`, and `pages/`
+- Import paths in JSX files updated to reference `../stylesheets/` or `./stylesheets/`

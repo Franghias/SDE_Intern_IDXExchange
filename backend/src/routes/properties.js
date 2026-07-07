@@ -197,6 +197,7 @@ router.get('/', async (req, res) => {
     const dataSQL = `
       SELECT
         L_ListingID   AS listingId,
+        L_DisplayId   AS propertyId,
         L_SystemPrice AS listPrice,
         L_Address     AS address,
         L_City        AS city,
@@ -204,7 +205,8 @@ router.get('/', async (req, res) => {
         L_Zip         AS zipCode,
         L_Keyword2    AS beds,
         LM_Dec_3      AS baths,
-        LM_Int2_3     AS sqft
+        LM_Int2_3     AS sqft,
+        L_Photos      AS photos
       FROM rets_property
       WHERE ${whereSQL}
       -- ORDER BY L_SystemPrice DESC

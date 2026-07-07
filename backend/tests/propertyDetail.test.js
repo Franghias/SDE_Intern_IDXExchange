@@ -86,7 +86,7 @@ describe('Week 4 — GET /api/properties/:id', () => {
 
     expect(res.status).toBe(400);
     expect(res.body.status).toBe('error');
-    expect(res.body.message).toContain('alphanumeric');
+    expect(res.body.message).toContain('numeric');
   });
 
   test('returns 400 for oversized ID (more than 20 characters)', async () => {
@@ -209,8 +209,8 @@ describe('Week 4 — GET /api/properties/:id/openhouses', () => {
   test('uses L_ListingID when it differs from L_DisplayId', async () => {
     const mockRows = [
       {
-        L_ListingID: 'SYSTEM123',
-        L_DisplayId: 'MLS456',
+        L_ListingID: '123456789',
+        L_DisplayId: '2345678',
         OpenHouseDate: '2026-06-20',
         OH_StartDate: '2026-06-20',
         OH_EndDate: '2026-06-20',
@@ -221,11 +221,11 @@ describe('Week 4 — GET /api/properties/:id/openhouses', () => {
     ];
     pool.query.mockResolvedValueOnce([mockRows]);
 
-    const res = await request(app).get('/api/properties/MLS456/openhouses');
+    const res = await request(app).get('/api/properties/2345678/openhouses');
 
     expect(res.status).toBe(200);
     // IDs differ, so L_ListingID should be used
-    expect(res.body.openHouses[0].listingId).toBe('SYSTEM123');
+    expect(res.body.openHouses[0].listingId).toBe('123456789');
   });
 
   test('uses L_DisplayId when both IDs are equal', async () => {
