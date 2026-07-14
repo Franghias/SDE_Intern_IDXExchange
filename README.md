@@ -8,9 +8,16 @@ A full-stack real estate listing platform with a searchable property grid, prope
 ┌─────────────────────────────────────────────────────────────────┐
 │                         Browser (:3000)                         │
 │                                                                 │
-│   index.html → main.jsx → App.jsx → ListingsPage → PropertyCard│
+│   ┌──────────┐  ┌──────────────────────────────────────┐       │
+│   │ Sidebar  │  │  Main Content Canvas                  │       │
+│   │          │  │                                        │       │
+│   │ • Intro  │  │  IntroductionPage (hero + features)    │       │
+│   │ • Search │  │  ListingsPage (filters + card grid)    │       │
+│   │          │  │    └── PropertyFilters                  │       │
+│   │          │  │    └── PropertyCard[]                   │       │
+│   └──────────┘  └──────────────────────────────────────┘       │
 │                                                                 │
-│   fetch('/api/properties')                                      │
+│   fetch('/api/properties?city=Portland&beds=3')                 │
 │         │                                                       │
 └─────────┼───────────────────────────────────────────────────────┘
           │
@@ -64,13 +71,15 @@ IDXExchange/
 ├── frontend/                 # React + Vite
 │   ├── src/
 │   │   ├── main.jsx          # React entry point
-│   │   ├── App.jsx           # App shell (header + page)
-│   │   ├── api/              # API client (fetchProperties)
+│   │   ├── App.jsx           # Dashboard layout (sidebar + content)
+│   │   ├── api/              # API client (fetchProperties) + tests
 │   │   ├── utils/            # parsePhotos, formatPrice
-│   │   ├── stylesheets/      # All CSS (index, App, PropertyCard, ListingsPage)
-│   │   ├── components/       # PropertyCard
-│   │   └── pages/            # ListingsPage
-│   ├── vite.config.js        # Dev server + API proxy
+│   │   ├── test/             # Vitest setup (jest-dom matchers)
+│   │   ├── stylesheets/      # All CSS (index, App, Sidebar, IntroductionPage,
+│   │   │                     #   PropertyCard, PropertyFilters, ListingsPage)
+│   │   ├── components/       # Sidebar, PropertyCard, PropertyFilters + tests
+│   │   └── pages/            # IntroductionPage, ListingsPage
+│   ├── vite.config.js        # Dev server + API proxy + Vitest config
 │   └── package.json
 │
 ├── database/                 # SQL imports (mounted into Docker)
@@ -114,24 +123,39 @@ Every request is logged by the `requestLogger` middleware with method, URL, stat
 
 ### 3. Frontend (React + Vite)
 
-The React app runs on port 3000. When it needs data, it calls `fetch('/api/properties')` using a relative URL. The Vite dev server proxies any request starting with `/api` to the Express backend at `http://localhost:5000`.
+The React app runs on port 3000 with a split-screen dashboard layout: a fixed sidebar on the left and a main content canvas on the right.
+
+**Navigation** uses React state (`currentPage` in `App.jsx`) to swap between two pages:
+- **Introduction** — hero section with headline, CTA, and feature cards
+- **Search** — property filters + listings grid
+
+The Vite dev server proxies any request starting with `/api` to the Express backend at `http://localhost:5000`.
 
 The data flow through the frontend:
 
-1. **`ListingsPage`** calls `fetchProperties()` from the API client on mount
-2. **API client** (`propertyApi.js`) sends the HTTP request and handles errors
-3. **`ListingsPage`** receives the response and renders a `PropertyCard` for each result
-4. **`PropertyCard`** parses the `photos` JSON string (from `L_Photos` in MySQL) and displays the first photo URL as an `<img>` tag
+1. **`App`** renders `<Sidebar />` + the active page based on `currentPage` state
+2. **`ListingsPage`** renders `<PropertyFilters />` above the property grid
+3. User fills in filters (city, state, ZIP, price range, beds, baths) and clicks Search
+4. **`PropertyFilters`** strips empty values and calls `onSearch(filters)`
+5. **`ListingsPage`** calls `fetchProperties({ limit: 20, offset: 0, ...filters })`
+6. **API client** (`propertyApi.js`) adds only non-empty filter values to the URL
+7. **`ListingsPage`** receives the response and renders a `PropertyCard` for each result
+8. If no results match, a "No properties found" message is shown with a suggestion to adjust filters
 
 ### The full request lifecycle
 
 ```
 User opens http://localhost:3000
   → Vite serves index.html + React app
-  → React mounts <ListingsPage />
+  → React mounts <App /> with Sidebar + IntroductionPage
+  → User clicks "Search" in sidebar or "Start Searching" CTA
+  → App swaps to <ListingsPage />
   → useEffect calls fetchProperties({ limit: 20, offset: 0 })
-  → fetch('/api/properties?limit=20&offset=0')
-  → Vite proxy forwards to http://localhost:5000/api/properties?limit=20&offset=0
+  → User applies filters (e.g. city=Portland, beds=3)
+  → PropertyFilters strips empty values, calls onSearch({ city: 'Portland', beds: '3' })
+  → fetchProperties({ limit: 20, offset: 0, city: 'Portland', beds: '3' })
+  → fetch('/api/properties?limit=20&offset=0&city=Portland&beds=3')
+  → Vite proxy forwards to http://localhost:5000/api/properties?...
   → Express requestLogger records the request
   → properties.js validates query params
   → properties.js builds SQL with data quality filters
@@ -140,7 +164,7 @@ User opens http://localhost:3000
   → Express sends JSON response { total, limit, offset, results }
   → Vite proxy relays response to browser
   → ListingsPage updates state with results
-  → React renders 20 PropertyCard components
+  → React renders PropertyCard components for matching properties
   → Each PropertyCard parses photos JSON and shows the first image
   → requestLogger logs: [timestamp] GET /api/properties?... 200 45ms
 ```
@@ -184,8 +208,13 @@ Open `http://localhost:3000` to see the property listings.
 ### 4. Run tests
 
 ```bash
+# Backend tests (Jest + Supertest)
 cd backend
-npm test               # Runs Jest with 38 tests
+npm test               # Runs 38 tests
+
+# Frontend tests (Vitest + React Testing Library)
+cd frontend
+npm test               # Runs 8 tests
 ```
 
 ## Environment Variables

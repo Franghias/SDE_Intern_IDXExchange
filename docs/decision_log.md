@@ -169,3 +169,79 @@
 - Co-location (CSS next to its component) is common in React projects, but a centralized stylesheet directory provides a single place to manage all styles
 - Makes it easier to find and audit all CSS in one directory rather than searching across `src/`, `components/`, and `pages/`
 - Import paths in JSX files updated to reference `../stylesheets/` or `./stylesheets/`
+
+#### 2026-07-07 — Week 6: Filters UI + Testing
+
+**Decision: Split-screen dashboard layout with fixed sidebar**
+- Implemented the PRD layout from SUPPORT_TASKS.md: fixed 260px left sidebar + scrollable main content canvas
+- Sidebar uses `position: fixed` so it stays visible during page scroll
+- Content area uses `margin-left: 260px` to avoid overlap with the fixed sidebar
+- CSS Grid (`grid-template-columns: 260px 1fr`) provides the two-column structure
+- Responsive: on mobile (≤768px), sidebar collapses to a horizontal top bar
+- All layout uses vanilla CSS per user preference — no CSS framework
+
+**Decision: Client-side routing via React state (no React Router)**
+- React Router is specified as a Week 8 task, so it's not installed yet
+- Navigation between Introduction and Search pages uses a `currentPage` state variable in `App.jsx`
+- Sidebar nav buttons call `setCurrentPage()` to swap the rendered page component
+- Simple and sufficient for two pages; React Router will replace this in Week 8
+
+**Decision: Introduction page with hero + feature cards**
+- PRD requires an Introduction page with hero section and feature grid
+- Hero section uses gradient text (`linear-gradient` with `-webkit-background-clip: text`) for visual impact
+- CTA button ("Start Searching") navigates to the Search page via the same state-based routing
+- Feature grid shows 4 cards with emoji icons — avoids adding an icon library dependency
+- Per Ponytail principle: prefer standard libraries first, avoid unnecessary dependencies
+
+**Decision: 7 filter inputs (adding state filter)**
+- TASKS.md Week 6 lists 6 inputs: city, ZIP code, min price, max price, beds, baths
+- User confirmed adding a `state` filter since the backend already supports it
+- Total: 7 inputs — city (text), state (text), ZIP code (text), min price (number), max price (number), beds (dropdown), baths (dropdown)
+
+**Decision: "Any" as default option in bed/bath dropdowns**
+- Beds dropdown: Any, 1, 2, 3, 4, 5+
+- Baths dropdown: Any, 1, 2, 3, 4+
+- "Any" maps to an empty string — it signals "no filter" and is excluded from the API request
+- "5+" and "4+" are converted to `5` and `4` respectively before sending to the backend
+- "Any" gives users a clear way to remove a previously selected filter without confusion
+
+**Decision: Empty values excluded from API request**
+- Per TASKS.md: "Empty filter values are not sent to the API (simply add values to the URL if the user fills the input, else do not add)"
+- `fetchProperties()` iterates over filter entries and only calls `params.set()` for non-empty, non-null values
+- `PropertyFilters` strips empty strings and "Any" selections before calling `onSearch`
+- This ensures the backend only receives intentional filter values
+
+**Decision: Vitest instead of Jest for frontend testing**
+- ARCHITECTURE.md originally said "Jest + React Testing Library"
+- User confirmed switch to Vitest — it integrates natively with Vite (shared config, same transform pipeline)
+- No need for separate Babel/transform config that Jest would require in a Vite project
+- Test config added inline in `vite.config.js` under the `test` block (no separate config file)
+- Backend continues to use Jest + Supertest (CommonJS environment, different needs)
+- Updated ARCHITECTURE.md to reflect: "Vitest + React Testing Library (frontend), Jest + Supertest (backend)"
+
+**Decision: Test setup file for jest-dom matchers**
+- Created `src/test/setup.js` that imports `@testing-library/jest-dom`
+- This provides custom matchers like `toBeInTheDocument()`, `toHaveValue()` globally
+- Referenced in `vite.config.js` via `test.setupFiles` so it loads before every test file
+- Avoids repeating the import in every individual test file
+
+**Decision: Mock `fetch` in API client tests with `vi.stubGlobal`**
+- API client tests mock the global `fetch` function rather than making real HTTP requests
+- Uses Vitest's `vi.stubGlobal('fetch', ...)` to replace fetch with a mock
+- Each test restores mocks via `vi.restoreAllMocks()` to prevent test pollution
+- Tests verify URL construction, filter inclusion/exclusion, and error handling without a running backend
+
+**Decision: All new CSS files placed in `stylesheets/` directory**
+- Consistent with the CSS consolidation decision from earlier in Week 6
+- New files: `Sidebar.css`, `IntroductionPage.css`, `PropertyFilters.css`
+- All CSS imports in components use `../stylesheets/` paths
+- Per Ponytail principle: avoid unnecessary files and keep a predictable structure
+
+#### 2026-07-11 — Week 6: Desktop Layout Bug Fix
+
+**Decision: Position .app-content in CSS Grid column 2 on desktop**
+- Resolved layout issue where the page content was hidden (collapsed to 0px width) on desktop views.
+- Because `.sidebar` uses `position: fixed`, it is taken out of the grid flow. This caused the first in-flow element, `.app-content`, to be auto-placed in column 1 (260px wide).
+- Combined with `.app-content`'s `margin-left: 260px;`, this collapsed the width of `.app-content` to 0px.
+- Changed `.app-content` to explicitly use `grid-column: 2;` on desktop and removed the redundant `margin-left: 260px;`.
+- On mobile, updated `.app-content` to use `grid-column: 1;` so that it displays correctly in the stacked layout.

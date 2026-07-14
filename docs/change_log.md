@@ -130,3 +130,43 @@
 - Updated import paths in `main.jsx`, `App.jsx`, `PropertyCard.jsx`, and `ListingsPage.jsx` to reference new stylesheet locations
 - Updated `frontend/README.md` and root `README.md` file structure trees to reflect new layout
 - Files: `frontend/src/stylesheets/index.css`, `frontend/src/stylesheets/App.css`, `frontend/src/stylesheets/PropertyCard.css`, `frontend/src/stylesheets/ListingsPage.css`
+
+#### 2026-07-07 — Week 6: Filters UI + Testing
+- **Dashboard layout redesign** — restructured the entire app to a split-screen dashboard:
+  - Created `frontend/src/components/Sidebar.jsx` — fixed left navigation bar (260px) with IDXExchange brand, Introduction and Search navigation links, active state highlighting
+  - Rewrote `frontend/src/stylesheets/App.css` — two-column CSS grid layout (`260px 1fr`), content area with margin-left offset for fixed sidebar, responsive mobile collapse
+  - Rewrote `frontend/src/App.jsx` — dashboard layout with Sidebar + main content canvas, client-side routing via React state (`currentPage`), no React Router (out of scope until Week 8)
+  - Created `frontend/src/stylesheets/Sidebar.css` — sidebar styles with sticky positioning, nav link hover/active states, mobile horizontal bar fallback
+- **Introduction page** — new landing page:
+  - Created `frontend/src/pages/IntroductionPage.jsx` — hero section with gradient headline, CTA button navigating to Search, feature grid with 4 cards (Search & Filter, Real-Time Data, Photo Galleries, Open House Info)
+  - Created `frontend/src/stylesheets/IntroductionPage.css` — hero gradient text, CTA glow effect, feature card grid with border-color hover animation
+- **PropertyFilters component** — filter form with 7 inputs:
+  - Created `frontend/src/components/PropertyFilters.jsx` — city (text), state (text), ZIP code (text), min price (number), max price (number), beds (dropdown), baths (dropdown)
+  - Dropdowns include "Any" as the default non-filter option; "5+" and "4+" converted to plain numbers for the API
+  - Empty values and "Any" selections are excluded from the submitted filters object
+  - "Search" button submits the form, "Clear Filters" button resets all inputs and calls `onClear`
+  - Created `frontend/src/stylesheets/PropertyFilters.css` — responsive grid layout (4→3→2→1 columns), dark theme inputs with focus ring, custom select dropdown caret, search/clear buttons
+- **ListingsPage integration:**
+  - Modified `frontend/src/pages/ListingsPage.jsx` — added filter state and handlers (`handleSearch`, `handleClear`), integrated `<PropertyFilters />` above the grid, added page header ("Find Properties"), added "(filtered)" tag on property count, added empty results message ("No properties found — try adjusting filters"), loading/error states now render below filters
+  - Modified `frontend/src/stylesheets/ListingsPage.css` — removed max-width constraint (handled by dashboard layout), added page header styles, filter tag styles, empty/no-results state
+- **API client update:**
+  - Modified `frontend/src/api/propertyApi.js` — `fetchProperties()` now accepts 7 filter params (`city`, `state`, `zipcode`, `minPrice`, `maxPrice`, `beds`, `baths`); only non-empty values are added to URLSearchParams
+- **Testing setup:**
+  - Installed dev dependencies: `vitest`, `@testing-library/react`, `@testing-library/jest-dom`, `@testing-library/user-event`, `jsdom`
+  - Added `test` script to `frontend/package.json`: `vitest run`
+  - Modified `frontend/vite.config.js` — added `test` block with `jsdom` environment, global test functions, and setup file
+  - Created `frontend/src/test/setup.js` — loads `@testing-library/jest-dom` matchers globally
+  - Created `frontend/src/api/propertyApi.test.js` — 4 tests: default URL params, non-empty filter inclusion, network failure error, server error message extraction
+  - Created `frontend/src/components/PropertyFilters.test.jsx` — 4 tests: renders all 7 inputs, onSearch called with values, empty values excluded, onClear resets inputs
+  - All 8 tests pass via `npm test`
+- **Documentation updates:**
+  - Modified `docs/ARCHITECTURE.md` — updated testing stack to "Vitest + React Testing Library (frontend), Jest + Supertest (backend)"
+- Files: `frontend/src/App.jsx`, `frontend/src/stylesheets/App.css`, `frontend/src/components/Sidebar.jsx`, `frontend/src/stylesheets/Sidebar.css`, `frontend/src/pages/IntroductionPage.jsx`, `frontend/src/stylesheets/IntroductionPage.css`, `frontend/src/components/PropertyFilters.jsx`, `frontend/src/stylesheets/PropertyFilters.css`, `frontend/src/pages/ListingsPage.jsx`, `frontend/src/stylesheets/ListingsPage.css`, `frontend/src/api/propertyApi.js`, `frontend/src/api/propertyApi.test.js`, `frontend/src/components/PropertyFilters.test.jsx`, `frontend/src/test/setup.js`, `frontend/vite.config.js`, `frontend/package.json`, `docs/ARCHITECTURE.md`
+
+#### 2026-07-11 — Week 6: Desktop Layout Bug Fix
+- **Fixed desktop layout issue**: Resolved CSS grid auto-placement bug that collapsed the main page content (`.app-content`) width to 0px, causing nothing but the sidebar to display.
+- **Adjusted layout rules**:
+  - Removed redundant `margin-left: 260px;` from `.app-content`.
+  - Positioned `.app-content` in grid column 2 (`grid-column: 2;`) on desktop, allowing CSS Grid to align it correctly next to the sidebar.
+  - Set `.app-content` to grid column 1 (`grid-column: 1;`) on mobile screens under the media query.
+- Files: `frontend/src/stylesheets/App.css`

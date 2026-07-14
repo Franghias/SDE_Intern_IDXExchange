@@ -1,22 +1,24 @@
-.app-header {
-  padding: 32px 24px 24px;
-  max-width: 1280px;
-  margin: 0 auto;
+/* ===== Dashboard Layout ===== */
+.app-layout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  min-height: 100vh;
 }
 
-.app-header__title {
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: var(--color-text);
-  letter-spacing: -0.02em;
+.app-content {
+  grid-column: 2;
+  min-height: 100vh;
+  overflow-y: auto;
 }
 
-.app-header__title span {
-  color: var(--color-primary);
-}
+/* Mobile: sidebar becomes top bar, content takes full width */
+@media (max-width: 768px) {
+  .app-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
 
-.app-header__subtitle {
-  font-size: 0.95rem;
-  color: var(--color-text-muted);
-  margin-top: 4px;
+  .app-content {
+    grid-column: 1;
+  }
 }
