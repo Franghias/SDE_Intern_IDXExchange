@@ -138,7 +138,7 @@ Response for backend:
 - npm test passes all tests
 
 
-<!-- ### WEEK 7: PAGINATION UI + COMPONENT TESTING
+### WEEK 7: PAGINATION UI + COMPONENT TESTING
 #### Requirements  
 - Add pagination state to ListingsPage (currentPage, itemsPerPage)
 - Build a Pagination component that displays page numbers, previous/next
@@ -157,7 +157,7 @@ buttons, and ellipsis for large page counts
 - All component tests pass
 
 
-### WEEK 8: PROPERTY DETAIL PAGE END-TO-END
+<!-- ### WEEK 8: PROPERTY DETAIL PAGE END-TO-END
 #### Requirements: 
 - Install React Router and set up routes: / for ListingsPage, /property/:id for PropertyDetailPage
 - Make property cards clickable — clicking navigates to the detail page

@@ -170,3 +170,48 @@
   - Positioned `.app-content` in grid column 2 (`grid-column: 2;`) on desktop, allowing CSS Grid to align it correctly next to the sidebar.
   - Set `.app-content` to grid column 1 (`grid-column: 1;`) on mobile screens under the media query.
 - Files: `frontend/src/stylesheets/App.css`
+
+#### 2026-07-14 — Week 7: Pagination UI + Component Testing
+- Created `frontend/src/components/Pagination.jsx` — reusable pagination component:
+  - Sliding window of 5 page numbers centered around the current page
+  - Always shows the last page with ellipsis (`…`) separator when not adjacent to the window
+  - Previous (`«`) and Next (`»`) buttons using unicode characters per SUPPORT_TASKS.md
+  - Previous disabled on page 1; Next disabled on last page
+  - Hidden entirely when `totalPages <= 1`
+  - Exports `buildPageNumbers()` as a named export for direct unit testing
+- Created `frontend/src/stylesheets/Pagination.css` — pagination styles:
+  - Flex container with centered page buttons using design tokens
+  - Active page highlighted with `--color-primary` background
+  - Disabled buttons with reduced opacity and `cursor: not-allowed`
+  - Non-clickable ellipsis `<span>` elements
+  - Items-per-page dropdown styled to match existing filter selects
+  - Responsive: smaller buttons and stacked layout on mobile
+- Modified `frontend/src/pages/ListingsPage.jsx` — added pagination integration:
+  - New state: `currentPage` (default 1), `itemsPerPage` (default 20), computed `totalPages`
+  - `loadProperties()` now accepts `page` and `limit` parameters, computes `offset = (page - 1) * limit`
+  - `handleSearch()` resets `currentPage` to 1, preserves new filters
+  - `handleClear()` resets `currentPage` to 1, clears filters
+  - `handlePageChange(page)` preserves active filters, scrolls to top with smooth animation
+  - `handleItemsPerPageChange(e)` preserves active filters, resets to page 1, re-fetches with new limit
+  - Items-per-page dropdown (10, 20, 30, 40, 50) rendered alongside each pagination instance
+  - Dual `<Pagination>` placement: below filters (above grid) and below the property grid
+  - Updated results summary: "Showing X–Y of Z properties" range format
+  - Both pagination instances and items-per-page dropdowns hidden when `totalPages <= 1`
+- Modified `frontend/src/stylesheets/ListingsPage.css` — added spacing rules for `#pagination-top` and `#pagination-bottom`
+- Created `frontend/src/test/Pagination.test.jsx` — 14 tests:
+  - 9 component tests: renders page numbers and nav buttons, Previous disabled on page 1, Next disabled on last page, clicking page number calls onPageChange, Previous navigates back, Next navigates forward, ellipsis renders for large counts, hidden when totalPages ≤ 1, active page has aria-current
+  - 5 `buildPageNumbers` unit tests: empty for ≤1 pages, all pages without ellipsis for ≤5 pages, sliding window with ellipsis for large counts, window merges with last page near end, no ellipsis when adjacent to last
+  - All 22 tests pass (8 existing + 14 new)
+- Files: `frontend/src/components/Pagination.jsx`, `frontend/src/stylesheets/Pagination.css`, `frontend/src/pages/ListingsPage.jsx`, `frontend/src/stylesheets/ListingsPage.css`, `frontend/src/test/Pagination.test.jsx`
+
+#### 2026-07-14 — Week 7: Pagination — Always Include Page 1
+- Modified `frontend/src/components/Pagination.jsx` — updated `buildPageNumbers()` to always include page 1:
+  - If the sliding window starts at page 2, page 1 is prepended directly (adjacent, no ellipsis)
+  - If the sliding window starts at page 3+, page 1 is prepended followed by an ellipsis (`…`)
+  - When on page 1, the window already starts at 1 — no change in behavior
+- Modified `frontend/src/test/Pagination.test.jsx` — updated expected values in 4 tests:
+  - `buildPageNumbers` sliding window, end-merge, and adjacency tests now expect page 1 in output
+  - Component ellipsis test updated to expect 2 ellipsis markers (page 5 of 24: `1, … 3,4,5,6,7, … 24`)
+  - All 22 tests pass
+- Files: `frontend/src/components/Pagination.jsx`, `frontend/src/test/Pagination.test.jsx`
+

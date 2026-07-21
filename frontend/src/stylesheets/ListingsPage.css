@@ -39,6 +39,15 @@
   font-weight: 500;
 }
 
+/* Pagination spacing */
+#pagination-top {
+  margin-bottom: 20px;
+}
+
+#pagination-bottom {
+  margin-top: 32px;
+}
+
 /* Grid */
 .listings-page__grid {
   display: grid;

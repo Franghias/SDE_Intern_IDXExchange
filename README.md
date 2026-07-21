@@ -14,7 +14,9 @@ A full-stack real estate listing platform with a searchable property grid, prope
 │   │ • Intro  │  │  IntroductionPage (hero + features)    │       │
 │   │ • Search │  │  ListingsPage (filters + card grid)    │       │
 │   │          │  │    └── PropertyFilters                  │       │
+│   │          │  │    └── Pagination (top)                 │       │
 │   │          │  │    └── PropertyCard[]                   │       │
+│   │          │  │    └── Pagination (bottom)              │       │
 │   └──────────┘  └──────────────────────────────────────┘       │
 │                                                                 │
 │   fetch('/api/properties?city=Portland&beds=3')                 │
@@ -74,10 +76,10 @@ IDXExchange/
 │   │   ├── App.jsx           # Dashboard layout (sidebar + content)
 │   │   ├── api/              # API client (fetchProperties) + tests
 │   │   ├── utils/            # parsePhotos, formatPrice
-│   │   ├── test/             # Vitest setup (jest-dom matchers)
+│   │   ├── test/             # Vitest setup + Pagination tests (22 tests)
 │   │   ├── stylesheets/      # All CSS (index, App, Sidebar, IntroductionPage,
-│   │   │                     #   PropertyCard, PropertyFilters, ListingsPage)
-│   │   ├── components/       # Sidebar, PropertyCard, PropertyFilters + tests
+│   │   │                     #   PropertyCard, PropertyFilters, ListingsPage, Pagination)
+│   │   ├── components/       # Sidebar, PropertyCard, PropertyFilters, Pagination + tests
 │   │   └── pages/            # IntroductionPage, ListingsPage
 │   ├── vite.config.js        # Dev server + API proxy + Vitest config
 │   └── package.json
@@ -134,13 +136,15 @@ The Vite dev server proxies any request starting with `/api` to the Express back
 The data flow through the frontend:
 
 1. **`App`** renders `<Sidebar />` + the active page based on `currentPage` state
-2. **`ListingsPage`** renders `<PropertyFilters />` above the property grid
+2. **`ListingsPage`** renders `<PropertyFilters />` + `<Pagination />` (top) above the grid, and `<Pagination />` (bottom) below the grid
 3. User fills in filters (city, state, ZIP, price range, beds, baths) and clicks Search
 4. **`PropertyFilters`** strips empty values and calls `onSearch(filters)`
-5. **`ListingsPage`** calls `fetchProperties({ limit: 20, offset: 0, ...filters })`
+5. **`ListingsPage`** resets to page 1, calls `fetchProperties({ limit, offset: 0, ...filters })`
 6. **API client** (`propertyApi.js`) adds only non-empty filter values to the URL
 7. **`ListingsPage`** receives the response and renders a `PropertyCard` for each result
-8. If no results match, a "No properties found" message is shown with a suggestion to adjust filters
+8. User can change pages via `<Pagination />` — filters are preserved, only `offset` changes
+9. User can change items per page (10/20/30/40/50) — resets to page 1, preserves filters
+10. If no results match, a "No properties found" message is shown with a suggestion to adjust filters
 
 ### The full request lifecycle
 
@@ -150,11 +154,12 @@ User opens http://localhost:3000
   → React mounts <App /> with Sidebar + IntroductionPage
   → User clicks "Search" in sidebar or "Start Searching" CTA
   → App swaps to <ListingsPage />
-  → useEffect calls fetchProperties({ limit: 20, offset: 0 })
-  → User applies filters (e.g. city=Portland, beds=3)
-  → PropertyFilters strips empty values, calls onSearch({ city: 'Portland', beds: '3' })
-  → fetchProperties({ limit: 20, offset: 0, city: 'Portland', beds: '3' })
-  → fetch('/api/properties?limit=20&offset=0&city=Portland&beds=3')
+   → useEffect calls fetchProperties({ limit: 20, offset: 0 })
+   → Pagination renders below filters and below the grid (page 1 active)
+   → User applies filters (e.g. city=Portland, beds=3)
+   → PropertyFilters strips empty values, calls onSearch({ city: 'Portland', beds: '3' })
+   → ListingsPage resets to page 1, fetchProperties({ limit: 20, offset: 0, city: 'Portland', beds: '3' })
+   → fetch('/api/properties?limit=20&offset=0&city=Portland&beds=3')
   → Vite proxy forwards to http://localhost:5000/api/properties?...
   → Express requestLogger records the request
   → properties.js validates query params
@@ -163,10 +168,13 @@ User opens http://localhost:3000
   → MySQL returns rows from rets_property
   → Express sends JSON response { total, limit, offset, results }
   → Vite proxy relays response to browser
-  → ListingsPage updates state with results
-  → React renders PropertyCard components for matching properties
-  → Each PropertyCard parses photos JSON and shows the first image
-  → requestLogger logs: [timestamp] GET /api/properties?... 200 45ms
+   → ListingsPage updates state with results, computes totalPages
+   → React renders PropertyCard components for matching properties
+   → Each PropertyCard parses photos JSON and shows the first image
+   → Pagination updates to reflect total pages (e.g. 1,2,3,4,5 … 24)
+   → User clicks page 3 → fetchProperties preserves filters, sets offset=40
+   → User changes per-page to 50 → resets to page 1, offset=0
+   → requestLogger logs: [timestamp] GET /api/properties?... 200 45ms
 ```
 
 ## Quick Start
@@ -214,7 +222,7 @@ npm test               # Runs 38 tests
 
 # Frontend tests (Vitest + React Testing Library)
 cd frontend
-npm test               # Runs 8 tests
+npm test               # Runs 22 tests
 ```
 
 ## Environment Variables

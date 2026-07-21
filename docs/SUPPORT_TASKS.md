@@ -116,4 +116,7 @@ Every page within the application must adhere to a strict split-screen, multi-co
       - "View Details" or favorite bookmark interactive buttons.
 
 
-<!-- ### WEEK 7: PAGINATION UI + COMPONENT TESTING -->
+### WEEK 7: PAGINATION UI + COMPONENT TESTING
+- Add arrows using unicode characters: `«` and `»` for previous and next buttons.
+- Those arrows appear below the filter section and in the bottom of the results container.
+- These arrows serve as the Previous and Next buttons for the pagination, in addition to page numbers.

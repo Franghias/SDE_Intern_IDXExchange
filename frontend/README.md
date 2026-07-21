@@ -17,6 +17,9 @@ frontend/
 │   ├── utils/
 │   │   └── format.js                 # parsePhotos(), formatPrice()
 │   ├── test/
+│   │   └── Pagination.test.jsx       # Pagination tests (14 tests)
+│   │   └── propertyApi.test.js       # Property API tests (4 tests)
+│   │   └── PropertyFilters.test.jsx  # PropertyFilters tests (4 tests)
 │   │   └── setup.js                  # Vitest setup — loads jest-dom matchers
 │   ├── stylesheets/
 │   │   ├── index.css                 # Global design tokens + CSS reset
@@ -25,15 +28,17 @@ frontend/
 │   │   ├── IntroductionPage.css      # Hero + feature cards
 │   │   ├── PropertyCard.css          # Card styles + hover effects
 │   │   ├── PropertyFilters.css       # Filter form layout + inputs
-│   │   └── ListingsPage.css          # Page layout + responsive grid
+│   │   ├── ListingsPage.css          # Page layout + responsive grid
+│   │   └── Pagination.css            # Pagination buttons + items-per-page dropdown
 │   ├── components/
 │   │   ├── Sidebar.jsx               # Fixed left navigation bar
 │   │   ├── PropertyCard.jsx          # Single property card
 │   │   ├── PropertyFilters.jsx       # Filter form (7 inputs)
+│   │   ├── Pagination.jsx            # Page navigation (sliding window + arrows)
 │   │   └── PropertyFilters.test.jsx  # PropertyFilters tests (4 tests)
 │   └── pages/
 │       ├── IntroductionPage.jsx      # Landing page — hero + features
-│       └── ListingsPage.jsx          # Search page — filters + card grid
+│       └── ListingsPage.jsx          # Search page — filters + pagination + card grid
 └── public/
     └── favicon.svg
 ```
@@ -49,15 +54,17 @@ index.html
   → <App /> renders <Sidebar /> + active page based on currentPage state
   → Sidebar has "Introduction" and "Search" nav links
   → Clicking "Search" swaps to <ListingsPage />
-  → <ListingsPage /> renders <PropertyFilters /> + property grid
+  → <ListingsPage /> renders <PropertyFilters /> + <Pagination /> (top) + grid + <Pagination /> (bottom)
   → User fills in filters and clicks Search
   → PropertyFilters strips empty values and calls onSearch(filters)
-  → ListingsPage calls fetchProperties({ limit: 20, offset: 0, ...filters })
+  → ListingsPage resets to page 1, calls fetchProperties({ limit, offset: 0, ...filters })
   → fetchProperties() sends GET /api/properties with filter query params
   → Vite proxy forwards to Express backend (localhost:5000)
   → Response comes back with { total, limit, offset, results }
-  → <ListingsPage /> maps results into <PropertyCard /> components
-  → Each <PropertyCard /> parses the photos JSON and displays the first image
+  → <ListingsPage /> maps results into <PropertyCard /> components, computes totalPages
+  → <Pagination /> renders page numbers (sliding window with page 1 always visible)
+  → User clicks a page → fetches with new offset, preserving filters
+  → User changes items per page → resets to page 1, preserves filters
 ```
 
 ### `main.jsx` → `App.jsx`
@@ -86,19 +93,23 @@ Displays on first visit:
 
 ### `ListingsPage.jsx` — Search page
 
-Manages four states:
+Manages five states:
 
 | State | What renders |
 |-------|-------------|
 | **Loading** | Centered spinner with "Loading properties…" text |
 | **Error** | Warning icon + error message (e.g., "Unable to connect to the server") |
-| **Data** | Property count + grid of PropertyCards |
+| **Data** | Results summary + pagination (top) + grid of PropertyCards + pagination (bottom) |
 | **Empty** | "No properties found" message with suggestion to adjust filters |
+| **Pagination** | `currentPage`, `itemsPerPage` (10/20/30/40/50, default 20), computed `totalPages` |
 
-Integrates `<PropertyFilters />`:
-- `handleSearch(filters)` updates active filters and re-fetches properties
-- `handleClear()` resets filters and loads all properties
-- Shows "(filtered)" tag on the property count when filters are active
+Integrates `<PropertyFilters />` and `<Pagination />`:
+- `handleSearch(filters)` resets to page 1 and re-fetches with new filters
+- `handleClear()` resets filters and page to 1, loads all properties
+- `handlePageChange(page)` preserves active filters, changes offset, scrolls to top
+- `handleItemsPerPageChange(newLimit)` preserves active filters, resets to page 1, re-fetches with new limit
+- Shows "Showing X–Y of Z properties" with "(filtered)" tag when filters are active
+- Pagination controls and items-per-page dropdown hidden when `totalPages ≤ 1`
 
 ### `PropertyFilters.jsx` — Filter form
 
@@ -139,6 +150,19 @@ Hover effect: the card lifts up (`translateY(-6px)`), shadow deepens, and the ph
 4. **Success** — returns the parsed JSON response
 
 All fetch calls use relative paths (`/api/properties`). The Vite dev server proxy forwards these to the Express backend.
+
+### `Pagination.jsx` — Pagination component
+
+Displays page navigation controls with:
+- **Previous (`«`)** and **Next (`»`)** buttons (disabled at boundaries)
+- **Sliding window** of 5 page numbers centered around the current page
+- **Page 1 always visible** — so users can jump back to the first page from anywhere
+- **Last page always visible** — separated by ellipsis (`…`) when not adjacent to the window
+- **Hidden** when `totalPages ≤ 1`
+
+Exports `buildPageNumbers(currentPage, totalPages)` as a named export for direct unit testing.
+
+Examples: page 1 of 24 → `« 1,2,3,4,5 … 24 »` | page 5 of 24 → `« 1 … 3,4,5,6,7 … 24 »`
 
 ### `utils/format.js` — Shared utilities
 
@@ -193,3 +217,4 @@ npx vitest       # Watch mode
 |-----------|-------|----------------|
 | `propertyApi.test.js` | 4 | URL construction, filter inclusion, network errors, server errors |
 | `PropertyFilters.test.jsx` | 4 | Renders inputs, onSearch values, empty exclusion, onClear reset |
+| `Pagination.test.jsx` | 14 | Page numbers, disabled prev/next, page click, ellipsis, hidden when ≤1 page, aria-current, buildPageNumbers algorithm edge cases |

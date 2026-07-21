@@ -245,3 +245,64 @@
 - Combined with `.app-content`'s `margin-left: 260px;`, this collapsed the width of `.app-content` to 0px.
 - Changed `.app-content` to explicitly use `grid-column: 2;` on desktop and removed the redundant `margin-left: 260px;`.
 - On mobile, updated `.app-content` to use `grid-column: 1;` so that it displays correctly in the stacked layout.
+
+#### 2026-07-14 — Week 7: Pagination UI + Component Testing
+
+**Decision: Sliding window of 5 pages + always-visible last page**
+- Pagination shows a window of 5 consecutive page numbers centered (±2) around the current page
+- The last page is always shown, separated by an ellipsis (`…`) when it isn't adjacent to the window
+- When the window overlaps with the last page, it merges without ellipsis (e.g., page 23 of 24 → `20,21,22,23,24`)
+- When close to page 1, the window starts at 1 (e.g., page 1 → `1,2,3,4,5, … 24`)
+- User specified this exact behavior: page numbers are clickable, not just arrows
+
+**Decision: Unicode characters `«` and `»` for Previous/Next buttons**
+- Per SUPPORT_TASKS.md guidance: use these specific unicode arrows
+- Previous (`«`) is disabled on page 1; Next (`»`) is disabled on the last page
+- Both use `aria-label` for accessibility (`"Previous page"`, `"Next page"`)
+
+**Decision: Dual pagination placement (above grid and below grid)**
+- Per SUPPORT_TASKS.md: pagination arrows appear below the filter section AND at the bottom of the results container
+- Both instances are identical `<Pagination>` components with the same state
+- Both include the items-per-page dropdown
+- Both are hidden when `totalPages <= 1`
+
+**Decision: Items-per-page dropdown with 5 fixed options**
+- User specified: 10, 20, 30, 40, 50 only — no free-text input
+- Default value: 20 (matches the existing `limit: 20` from prior weeks)
+- Changing items-per-page resets to page 1 and re-fetches with the new limit
+- Active filters are preserved when changing the page size
+
+**Decision: Pagination state managed in ListingsPage**
+- `currentPage` (1-indexed), `itemsPerPage`, and computed `totalPages` live in ListingsPage state
+- `offset` is derived: `(currentPage - 1) * itemsPerPage`
+- `handleSearch` and `handleClear` both reset `currentPage` to 1 before fetching
+- `handlePageChange` preserves `activeFilters` and only changes offset
+- `handleItemsPerPageChange` preserves `activeFilters`, resets page to 1, and re-fetches with new limit
+
+**Decision: Scroll to top on page change**
+- `window.scrollTo({ top: 0, behavior: 'smooth' })` is called in `handlePageChange`
+- Smooth scroll gives visual feedback that the page has changed
+- Not triggered on filter changes or items-per-page changes (those already render at the top)
+
+**Decision: Results summary shows range**
+- Changed from "Showing 20 of 487 properties" to "Showing 1–20 of 487 properties"
+- Range format: `Showing {rangeStart}–{rangeEnd} of {total} properties`
+- When total is 0, rangeStart is also 0 (displays "Showing 0–0 of 0")
+
+**Decision: `buildPageNumbers` exported as a named export for testability**
+- The sliding window algorithm is a pure function exported separately from the component
+- Allows direct unit testing of the algorithm without rendering the component
+- 5 dedicated tests cover edge cases: empty, small counts, large counts, end merging, adjacency
+
+**Decision: All pagination tests in a single test file**
+- Created `src/test/Pagination.test.jsx` with 14 tests (9 component + 5 algorithm)
+- Component tests use React Testing Library + userEvent for interaction testing
+- Algorithm tests use direct function calls for precise edge-case coverage
+- Consistent with existing test organization (tests in `src/test/` directory)
+
+**Decision: Always include page 1 in pagination output**
+- User requested page 1 always be visible so users can jump back to the original search (limit 20, offset 0) from any page
+- If the sliding window starts at page 2, page 1 is prepended without ellipsis (adjacent)
+- If the sliding window starts at page 3+, page 1 is prepended with an ellipsis separator
+- When on page 1, the window already starts at 1 so no extra logic is needed
+- Examples: page 5 of 24 → `1, … 3,4,5,6,7, … 24`; page 4 of 7 → `1,2,3,4,5,6,7`
