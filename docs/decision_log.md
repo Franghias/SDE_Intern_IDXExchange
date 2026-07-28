@@ -306,3 +306,81 @@
 - If the sliding window starts at page 3+, page 1 is prepended with an ellipsis separator
 - When on page 1, the window already starts at 1 so no extra logic is needed
 - Examples: page 5 of 24 → `1, … 3,4,5,6,7, … 24`; page 4 of 7 → `1,2,3,4,5,6,7`
+
+#### 2026-07-22 — Week 8: Property Detail Page End-to-End
+
+**Decision: Open detail page in a new browser tab**
+- User requested that clicking a property card opens the detail page in a new tab, so users can continue browsing listings while viewing details
+- PropertyCard uses an `<a>` tag with `target="_blank"` and `rel="noopener noreferrer"` instead of React Router `<Link>`
+- The `/property/:id` route still exists in the router for the new tab to render correctly
+- Carousel arrow buttons use `e.stopPropagation()` and `e.preventDefault()` to prevent the link from navigating when clicking arrows
+
+**Decision: React Router replaces state-based routing**
+- Replaced `useState('introduction')` routing in App.jsx with `react-router-dom`'s `BrowserRouter` + `Routes`
+- Three routes: `/` (Introduction), `/search` (Listings), `/property/:id` (Detail)
+- Sidebar now uses `useNavigate()` and `useLocation()` instead of `onNavigate` prop
+- IntroductionPage uses `useNavigate()` instead of `onNavigateToSearch` prop
+- Enables browser back/forward navigation and direct URL access
+
+**Decision: Configurable `PROPERTY_DETAIL_COLUMNS` array**
+- Per SUPPORT_TASKS.md: backend property detail endpoint should allow adding/removing columns without code changes
+- Created `PROPERTY_DETAIL_COLUMNS` array at the top of `properties.js` — each entry maps a DB column to an API field name
+- `buildDetailSelect()` function dynamically builds the SQL SELECT clause from this array
+- Adding `{ db: 'SOME_COLUMN', alias: 'someField' }` to the array automatically includes it in the API response
+- Frontend renders any field not in `SPECIAL_FIELDS` (core fields like price, address, photos) dynamically in the "Property Details" grid
+- This means backend column additions auto-appear on the frontend without frontend code changes
+
+**Decision: `hasOpenHouse` flag via LEFT JOIN subquery**
+- Per SUPPORT_TASKS.md: show green "Open House" badge on property cards for properties with active open houses
+- Added a LEFT JOIN against a subquery that counts active open houses per property
+- Active definition: `OH_StartDate <= OH_EndDate AND OH_EndDate >= CURDATE() AND OH_StartDate <= CURDATE()`
+- Boolean `hasOpenHouse` returned on each listing result; avoids N+1 API calls per card
+- Only active open houses trigger the badge (not expired or upcoming)
+
+**Decision: Three-state open house labels (active/expired/upcoming)**
+- User confirmed all three states should be shown:
+  - **Active** (green): `OH_StartDate ≤ today` AND `OH_EndDate ≥ today`
+  - **Expired** (red): `OH_StartDate ≤ today` AND `OH_EndDate < today`
+  - **Upcoming** (blue): `OH_StartDate > today`
+- Status is computed server-side and returned as a `status` field on each open house
+- Frontend renders colored badges: green for active, red for expired, blue for upcoming
+
+**Decision: Open house validation rules enforced via INNER JOIN + WHERE**
+- Per SUPPORT_TASKS.md: open houses must exist in both `rets_openhouse` and `rets_property` (INNER JOIN)
+- `L_DisplayId` in `rets_openhouse` must match `L_DisplayId` in `rets_property`
+- `OH_StartDate <= OH_EndDate` filter in WHERE clause
+- `OH_StartDate` and `OH_EndDate` returned in the response for frontend date display
+
+**Decision: PropertyImageCarousel for listing cards, PropertyImageGallery for detail page**
+- Two separate photo components per TASKS.md requirements
+- Carousel: lightweight, prev/next arrows, counter overlay (X / Y), shows/hides arrows on hover
+- Gallery: main image + scrollable thumbnail strip + full-screen lightbox with Escape/click-outside close and arrow key navigation
+- Both parse `L_Photos` from its JSON array format using the shared `parsePhotos()` utility
+
+**Decision: Google Maps Embed API via iframe**
+- Per TASKS.md: use Google Maps Embed API (iframe-based, no npm package)
+- API key stored in `VITE_GOOGLE_MAPS_API_KEY` (Vite env var prefix, not `REACT_APP_`)
+- Map only renders when both `latitude` and `longitude` are present and non-null
+- "Get Directions" link opens Google Maps directions in a new tab
+- Per Ponytail principle: prefer standard APIs (iframe) over npm packages
+
+**Decision: `VITE_` prefix for environment variables instead of `REACT_APP_`**
+- The project uses Vite, not Create React App
+- Vite exposes env vars prefixed with `VITE_` via `import.meta.env`
+- Created `frontend/.env` and `frontend/.env.example` with `VITE_GOOGLE_MAPS_API_KEY`
+
+**Decision: Dynamic "Property Details" grid on detail page**
+- Fields not in the `SPECIAL_FIELDS` set (core fields rendered by dedicated components) are auto-rendered in a two-column grid
+- `toLabel()` converts camelCase field names to readable labels (e.g., "propertyType" → "Property Type")
+- When backend adds a column to `PROPERTY_DETAIL_COLUMNS`, it automatically appears in this grid
+- Removes need for frontend code changes when backend columns are modified
+
+**Decision: Parallel data fetching on detail page**
+- `Promise.all([fetchPropertyById(id), fetchOpenHouses(id)])` loads both datasets simultaneously
+- Open house fetch failure is caught independently — the page still shows property data if open houses fail
+- Reduces perceived load time vs. sequential requests
+
+**Decision: Place "Property Details" section inside photo column below photos**
+- Positioned the dynamic "Property Details" grid inside `.detail-page__gallery-col` directly below `<PropertyImageGallery>`
+- Keeps photo column organized with image gallery on top and property specifications below it
+- Preserves responsive two-column desktop and single-column mobile layout without extra DOM wrappers

@@ -1,24 +1,31 @@
-import { parsePhotos, formatPrice } from '../utils/format';
+import { formatPrice } from '../utils/format';
+import PropertyImageCarousel from './PropertyImageCarousel';
 import '../stylesheets/PropertyCard.css';
 
-const PLACEHOLDER_IMG = 'https://placehold.co/400x260/1a1a2e/e0e0e0?text=No+Photo';
-
+/**
+ * Property listing card with image carousel, price badge, stats,
+ * and optional "Open House" green badge.
+ * Opens the detail page in a new tab on click.
+ */
 function PropertyCard({ property }) {
-  const photos = parsePhotos(property.photos);
-  const photoUrl = photos.length > 0 ? photos[0] : PLACEHOLDER_IMG;
+  const detailUrl = `/property/${property.propertyId}`;
 
   return (
-    <article className="property-card" id={`property-${property.listingId}`}>
+    <a
+      className="property-card"
+      id={`property-${property.listingId}`}
+      href={detailUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+    >
       <div className="property-card__image-wrapper">
-        <img
-          className="property-card__image"
-          src={photoUrl}
-          alt={`${property.address}, ${property.city}`}
-          loading="lazy"
-        />
+        <PropertyImageCarousel photosStr={property.photos} />
         <span className="property-card__price-badge">
           {formatPrice(property.listPrice)}
         </span>
+        {property.hasOpenHouse && (
+          <span className="property-card__openhouse-badge">Open House</span>
+        )}
       </div>
 
       <div className="property-card__body">
@@ -41,7 +48,7 @@ function PropertyCard({ property }) {
           </span>
         </div>
       </div>
-    </article>
+    </a>
   );
 }
 

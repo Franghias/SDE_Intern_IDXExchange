@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import '../stylesheets/IntroductionPage.css';
 
 const FEATURES = [
@@ -23,7 +24,8 @@ const FEATURES = [
   },
 ];
 
-function IntroductionPage({ onNavigateToSearch }) {
+function IntroductionPage() {
+  const navigate = useNavigate();
   return (
     <div className="intro-page">
       <section className="intro-page__hero">
@@ -37,7 +39,7 @@ function IntroductionPage({ onNavigateToSearch }) {
         <button
           className="intro-page__cta"
           id="cta-search"
-          onClick={onNavigateToSearch}
+          onClick={() => navigate('/search')}
         >
           Start Searching
         </button>

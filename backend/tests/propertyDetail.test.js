@@ -255,7 +255,7 @@ describe('Week 4 — GET /api/properties/:id/openhouses', () => {
     await request(app).get('/api/properties/1174572339/openhouses');
 
     const [sql] = pool.query.mock.calls[0];
-    expect(sql).toContain('ORDER BY OpenHouseDate ASC, OH_StartTime ASC');
+    expect(sql).toContain('ORDER BY oh.OpenHouseDate ASC, oh.OH_StartTime ASC');
   });
 
   test('returns 400 for malformed ID', async () => {

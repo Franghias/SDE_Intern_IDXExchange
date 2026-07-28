@@ -120,3 +120,18 @@ Every page within the application must adhere to a strict split-screen, multi-co
 - Add arrows using unicode characters: `«` and `»` for previous and next buttons.
 - Those arrows appear below the filter section and in the bottom of the results container.
 - These arrows serve as the Previous and Next buttons for the pagination, in addition to page numbers.
+
+
+### WEEK 8: PROPERTY DETAIL PAGE END-TO-END
+- Add a list in backend where I can add columns manually in order to display them in the frontend for both rets_property table and rets_openhouse tables.
+- Design the /api/properties/:id in the backend so that whenever I add or remove columns in that list for rets_property table, it can automatically update to show/hide the columns in the frontend.
+- Rules for openhouses:
+  - Only allows openhouse from backend if and only if:
+    - It has data in both rets_openhouse and rets_property.
+    - `L_ListingID` in `rets_openhouse` and `L_DisplayId` in `rets_property` is the same.
+    - `OH_StartDate` has to smaller or equal to `OH_EndDate`.
+    - `OH_StartDate` has to smaller or equal to Today.
+    - If `OH_EndDate` is not equal or bigger than today, has the lable expired with the text "Expired" with red color.
+    
+  - In listing page, add a small label or icon with the text "Open House" with green color to indicate if the property has an open house (in the propertyCard and on the right side).
+  - In the property detail page, add a section that displays all the open houses for the property.

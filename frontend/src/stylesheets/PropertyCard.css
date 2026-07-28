@@ -5,11 +5,15 @@
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
   transition: transform 0.25s ease, box-shadow 0.25s ease;
   cursor: pointer;
+  display: block;
+  text-decoration: none;
+  color: inherit;
 }
 
 .property-card:hover {
   transform: translateY(-6px);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+  color: inherit;
 }
 
 /* Image */
@@ -19,18 +23,6 @@
   aspect-ratio: 16 / 10;
   overflow: hidden;
   background: var(--color-skeleton);
-}
-
-.property-card__image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  transition: transform 0.35s ease;
-}
-
-.property-card:hover .property-card__image {
-  transform: scale(1.05);
 }
 
 /* Price badge */
@@ -46,6 +38,24 @@
   border-radius: 8px;
   letter-spacing: 0.01em;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  z-index: 2;
+}
+
+/* Open House badge */
+.property-card__openhouse-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: rgba(34, 197, 94, 0.9);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 4px 10px;
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  z-index: 2;
 }
 
 /* Body */
@@ -87,3 +97,4 @@
   color: var(--color-border);
   font-size: 0.75rem;
 }
+

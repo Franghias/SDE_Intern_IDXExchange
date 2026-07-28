@@ -15,7 +15,9 @@ backend/
 │   │   └── requestLogger.js   # Logs every request: [timestamp] METHOD /url STATUS durationMs
 │   └── routes/
 │       ├── health.js          # GET /api/health — database connectivity check
-│       └── properties.js      # GET /api/properties, GET /api/properties/:id, GET /api/properties/:id/openhouses
+│       └── properties.js      # GET /api/properties (search + hasOpenHouse),
+│                              # GET /api/properties/:id (configurable columns),
+│                              # GET /api/properties/:id/openhouses (status + validation)
 ├── tests/
 │   ├── health.test.js         # 5 tests — health endpoint
 │   ├── properties.test.js     # 17 tests — listing search, filters, pagination, validation
@@ -66,9 +68,9 @@ Reads connection details from environment variables: `DB_HOST`, `DB_USER`, `DB_P
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/api/health` | Returns `{ status: "ok" }` if database is reachable, 500 if not |
-| GET | `/api/properties` | Search properties with pagination and filters |
-| GET | `/api/properties/:id` | Single property detail by `L_DisplayId` |
-| GET | `/api/properties/:id/openhouses` | Open house events for a property |
+| GET | `/api/properties` | Search properties with pagination, filters, and `hasOpenHouse` flag |
+| GET | `/api/properties/:id` | Single property detail by `L_DisplayId` (driven by `PROPERTY_DETAIL_COLUMNS`) |
+| GET | `/api/properties/:id/openhouses` | Open house events with status (`active`, `expired`, `upcoming`) |
 
 ### `GET /api/properties` — Listing search
 
@@ -104,23 +106,76 @@ Reads connection details from environment variables: `DB_HOST`, `DB_USER`, `DB_P
       "beds": 3,
       "baths": 2,
       "sqft": 1500,
-      "photos": "[\"https://example.com/photo1.jpg\", ...]"
+      "photos": "[\"https://example.com/photo1.jpg\", ...]",
+      "hasOpenHouse": true
     }
   ]
 }
 ```
 
-Note: `photos` is a raw JSON string from the `L_Photos` database column. The frontend parses it with `JSON.parse()`.
+- `photos` is a raw JSON string from the `L_Photos` database column.
+- `hasOpenHouse` is a boolean flag determined via a LEFT JOIN subquery against active open house events (`OH_StartDate <= OH_EndDate AND OH_EndDate >= CURDATE() AND OH_StartDate <= CURDATE()`).
 
 **Data quality filters** are always applied: rows with NULL/blank city, state, zip, price, beds, or baths are excluded. Rows with invalid zips, negative values, or non-alphabetic city/state are also excluded.
 
-### `GET /api/properties/:id` — Property detail
+### `GET /api/properties/:id` — Configurable Property Detail
 
-Returns the full property object or 404. Looks up by `L_DisplayId`.
+Returns the property object or 404. Looks up by `L_DisplayId`.
 
-### `GET /api/properties/:id/openhouses` — Open houses
+The SELECT clause is built dynamically from the `PROPERTY_DETAIL_COLUMNS` array at the top of `src/routes/properties.js`:
 
-Returns an array of open house events ordered by date and start time. Returns an empty array (not 404) if no events exist.
+```javascript
+const PROPERTY_DETAIL_COLUMNS = [
+  { db: 'L_ListingID', alias: 'listingId' },
+  { db: 'L_DisplayId', alias: 'displayId' },
+  { db: 'L_Address', alias: 'address' },
+  { db: 'L_City', alias: 'city' },
+  { db: 'L_State', alias: 'state' },
+  { db: 'L_Zip', alias: 'zipCode' },
+  { db: 'L_SystemPrice', alias: 'listPrice' },
+  { db: 'L_Keyword2', alias: 'beds' },
+  { db: 'LM_Dec_3', alias: 'baths' },
+  { db: 'LM_Int2_3', alias: 'sqft' },
+  { db: 'YearBuilt', alias: 'yearBuilt' },
+  { db: 'L_Remarks', alias: 'description' },
+  { db: 'L_Photos', alias: 'photos' },
+  { db: 'LMD_MP_Latitude', alias: 'latitude' },
+  { db: 'LMD_MP_Longitude', alias: 'longitude' },
+  { db: 'L_Type_', alias: 'propertyType' },
+  { db: 'L_Status', alias: 'status' }
+];
+```
+
+To add or remove database columns returned by this endpoint, simply edit `PROPERTY_DETAIL_COLUMNS`.
+
+### `GET /api/properties/:id/openhouses` — Open House Events
+
+Returns open house events for a property with strict validation rules:
+- Inner joined with `rets_property` on `L_DisplayId` to verify existence in both tables.
+- Filters out invalid date records (`OH_StartDate <= OH_EndDate`).
+- Computes a server-side `status` field:
+  - `"active"`: `OH_StartDate <= today <= OH_EndDate`
+  - `"expired"`: `OH_EndDate < today`
+  - `"upcoming"`: `OH_StartDate > today`
+
+**Response Example:**
+```json
+{
+  "listingId": "100002222",
+  "openHouses": [
+    {
+      "listingId": "100002222",
+      "date": "2026-06-15T00:00:00.000Z",
+      "startDate": "2026-06-15T00:00:00.000Z",
+      "endDate": "2026-06-15T00:00:00.000Z",
+      "startTime": "0 days 14:00:00",
+      "endTime": "0 days 17:00:00",
+      "status": "expired",
+      "OpenHouseRemarks": "Refreshments served."
+    }
+  ]
+}
+```
 
 ## Setup
 

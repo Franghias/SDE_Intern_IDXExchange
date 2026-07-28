@@ -4,6 +4,41 @@ const pool = require('../config/db');
 const router = express.Router();
 
 /**
+ * Configurable columns for the property detail endpoint.
+ * Add or remove entries here to control which fields GET /api/properties/:id returns.
+ * Each entry: { db: 'DB_COLUMN_NAME', alias: 'apiFieldName' }
+ */
+const PROPERTY_DETAIL_COLUMNS = [
+  { db: 'L_ListingID', alias: 'listingId' },
+  { db: 'L_DisplayId', alias: 'displayId' },
+  { db: 'L_Address', alias: 'address' },
+  { db: 'L_City', alias: 'city' },
+  { db: 'L_State', alias: 'state' },
+  { db: 'L_Zip', alias: 'zipCode' },
+  { db: 'L_SystemPrice', alias: 'listPrice' },
+  { db: 'L_Keyword2', alias: 'beds' },
+  { db: 'LM_Dec_3', alias: 'baths' },
+  { db: 'LM_Int2_3', alias: 'sqft' },
+  { db: 'YearBuilt', alias: 'yearBuilt' },
+  { db: 'L_Remarks', alias: 'description' },
+  { db: 'L_Photos', alias: 'photos' },
+  { db: 'LMD_MP_Latitude', alias: 'latitude' },
+  { db: 'LMD_MP_Longitude', alias: 'longitude' },
+  { db: 'L_Type_', alias: 'propertyType' },
+  { db: 'L_Status', alias: 'status' },
+  { db: 'Flooring', alias: 'flooring' }
+];
+
+/**
+ * Build the SELECT clause from PROPERTY_DETAIL_COLUMNS.
+ */
+function buildDetailSelect() {
+  return PROPERTY_DETAIL_COLUMNS
+    .map((col) => `${col.db} AS ${col.alias}`)
+    .join(',\n        ');
+}
+
+/**
  * Capitalize a string to Title Case (first letter uppercase, rest lowercase).
  * Handles multi-word strings like "New York" -> "New York".
  */
@@ -193,33 +228,48 @@ router.get('/', async (req, res) => {
     const [countRows] = await pool.query(countSQL, params);
     const total = countRows[0].total;
 
-    // Fetch paginated results
+    // Fetch paginated results with hasOpenHouse flag
+    // An active open house: L_DisplayId matches, OH_StartDate <= OH_EndDate, OH_EndDate >= today
     const dataSQL = `
       SELECT
-        L_ListingID   AS listingId,
-        L_DisplayId   AS propertyId,
-        L_SystemPrice AS listPrice,
-        L_Address     AS address,
-        L_City        AS city,
-        L_State       AS state,
-        L_Zip         AS zipCode,
-        L_Keyword2    AS beds,
-        LM_Dec_3      AS baths,
-        LM_Int2_3     AS sqft,
-        L_Photos      AS photos
-      FROM rets_property
-      WHERE ${whereSQL}
-      -- ORDER BY L_SystemPrice DESC
+        p.L_ListingID   AS listingId,
+        p.L_DisplayId   AS propertyId,
+        p.L_SystemPrice AS listPrice,
+        p.L_Address     AS address,
+        p.L_City        AS city,
+        p.L_State       AS state,
+        p.L_Zip         AS zipCode,
+        p.L_Keyword2    AS beds,
+        p.LM_Dec_3      AS baths,
+        p.LM_Int2_3     AS sqft,
+        p.L_Photos      AS photos,
+        CASE WHEN oh_active.cnt > 0 THEN TRUE ELSE FALSE END AS hasOpenHouse
+      FROM rets_property p
+      LEFT JOIN (
+        SELECT L_DisplayId, COUNT(*) AS cnt
+        FROM rets_openhouse
+        WHERE OH_StartDate <= OH_EndDate
+          AND OH_EndDate >= CURDATE()
+          AND OH_StartDate <= CURDATE()
+        GROUP BY L_DisplayId
+      ) oh_active ON p.L_DisplayId = oh_active.L_DisplayId
+      WHERE ${whereSQL.replace(/(?<!p\.)L_/g, 'p.L_').replace(/(?<!p\.)LM_/g, 'p.LM_')}
       LIMIT ? OFFSET ?
     `;
     const dataParams = [...params, filters.limit, filters.offset];
     const [rows] = await pool.query(dataSQL, dataParams);
 
+    // Convert hasOpenHouse from 0/1 to boolean
+    const results = rows.map((row) => ({
+      ...row,
+      hasOpenHouse: Boolean(row.hasOpenHouse),
+    }));
+
     res.json({
       total,
       limit: filters.limit,
       offset: filters.offset,
-      results: rows,
+      results,
     });
   } catch (err) {
     console.error('Properties query failed:', err.message);
@@ -287,21 +337,30 @@ router.get('/:id/openhouses', async (req, res) => {
   }
 
   try {
+    // Validation rules from SUPPORT_TASKS.md:
+    // - Must exist in both rets_openhouse and rets_property (JOIN)
+    // - L_ListingID (openhouse) matches L_DisplayId (property)
+    // - OH_StartDate <= OH_EndDate
     const sql = `
       SELECT
-        L_ListingID,
-        L_DisplayId,
-        OpenHouseDate,
-        OH_StartDate,
-        OH_EndDate,
-        OH_StartTime   AS startTime,
-        OH_EndTime     AS endTime,
-        all_data
-      FROM rets_openhouse
-      WHERE L_DisplayId = ?
-      ORDER BY OpenHouseDate ASC, OH_StartTime ASC
+        oh.L_ListingID,
+        oh.L_DisplayId,
+        oh.OpenHouseDate,
+        oh.OH_StartDate,
+        oh.OH_EndDate,
+        oh.OH_StartTime   AS startTime,
+        oh.OH_EndTime     AS endTime,
+        oh.all_data
+      FROM rets_openhouse oh
+      INNER JOIN rets_property p ON oh.L_DisplayId = p.L_DisplayId
+      WHERE oh.L_DisplayId = ?
+        AND oh.OH_StartDate <= oh.OH_EndDate
+      ORDER BY oh.OpenHouseDate ASC, oh.OH_StartTime ASC
     `;
     const [rows] = await pool.query(sql, [id]);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
     const openHouses = rows.map((row) => {
       // Listing ID: if L_ListingID == L_DisplayId use L_DisplayId, else use L_ListingID
@@ -318,14 +377,27 @@ router.get('/:id/openhouses', async (req, res) => {
         row.OpenHouseDate.toString() === row.OH_EndDate.toString();
       const date = allDatesEqual ? row.OpenHouseDate : row.OH_StartDate;
 
+      // Compute status: expired, upcoming, or active
+      const startDate = row.OH_StartDate ? new Date(row.OH_StartDate) : null;
+      const endDate = row.OH_EndDate ? new Date(row.OH_EndDate) : null;
+      let status = 'active';
+      if (startDate && startDate > today) {
+        status = 'upcoming';
+      } else if (endDate && endDate < today) {
+        status = 'expired';
+      }
+
       // Extract selected fields from all_data JSON
       const details = extractAllData(row.all_data);
 
       return {
         listingId,
         date,
+        startDate: row.OH_StartDate,
+        endDate: row.OH_EndDate,
         startTime: row.startTime,
         endTime: row.endTime,
+        status,
         ...details,
       };
     });
@@ -340,7 +412,7 @@ router.get('/:id/openhouses', async (req, res) => {
   }
 });
 
-// GET /api/properties/:id — single property detail
+// GET /api/properties/:id — single property detail (columns driven by PROPERTY_DETAIL_COLUMNS)
 router.get('/:id', async (req, res) => {
   const { id } = req.params;
 
@@ -352,25 +424,10 @@ router.get('/:id', async (req, res) => {
   }
 
   try {
+    const selectClause = buildDetailSelect();
     const sql = `
       SELECT
-        L_ListingID        AS listingId,
-        L_DisplayId        AS displayId,
-        L_Address          AS address,
-        L_City             AS city,
-        L_State            AS state,
-        L_Zip              AS zipCode,
-        L_SystemPrice      AS listPrice,
-        L_Keyword2         AS beds,
-        LM_Dec_3           AS baths,
-        LM_Int2_3          AS sqft,
-        YearBuilt          AS yearBuilt,
-        L_Remarks          AS description,
-        L_Photos           AS photos,
-        LMD_MP_Latitude    AS latitude,
-        LMD_MP_Longitude   AS longitude,
-        L_Type_            AS propertyType,
-        L_Status           AS status
+        ${selectClause}
       FROM rets_property
       WHERE L_DisplayId = ?
       LIMIT 1

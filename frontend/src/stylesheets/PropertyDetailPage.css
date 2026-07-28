@@ -1,0 +1,288 @@
+/* ===== Property Detail Page ===== */
+.detail-page {
+  padding: 32px 40px 48px;
+  max-width: 1200px;
+}
+
+/* Back link */
+.detail-page__back-link {
+  display: inline-flex;
+  align-items: center;
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+  font-weight: 500;
+  text-decoration: none;
+  margin-bottom: 24px;
+  transition: color 0.2s ease;
+}
+
+.detail-page__back-link:hover {
+  color: var(--color-primary);
+}
+
+/* Two-column layout */
+.detail-page__layout {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 40px;
+  margin-bottom: 32px;
+}
+
+/* Gallery column */
+.detail-page__gallery-col {
+  min-width: 0;
+}
+
+/* Info column */
+.detail-page__info-col {
+  min-width: 0;
+}
+
+/* Price */
+.detail-page__price {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  margin: 0 0 8px;
+  letter-spacing: -0.02em;
+}
+
+/* Address */
+.detail-page__address {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 4px;
+}
+
+.detail-page__location {
+  font-size: 0.95rem;
+  color: var(--color-text-muted);
+  margin: 0 0 24px;
+}
+
+/* Stats */
+.detail-page__stats {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 28px;
+  padding: 16px 20px;
+  background: var(--color-surface);
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+}
+
+.detail-page__stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.detail-page__stat-value {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.detail-page__stat-label {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Sections */
+.detail-page__section {
+  margin-bottom: 28px;
+}
+
+.detail-page__section-title {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* Description */
+.detail-page__description {
+  font-size: 0.95rem;
+  color: var(--color-text-secondary);
+  line-height: 1.7;
+  margin: 0;
+}
+
+/* Property Details grid */
+.detail-page__gallery-col #property-details {
+  margin-top: 24px;
+}
+
+.detail-page__details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px 24px;
+}
+
+.detail-page__detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.detail-page__detail-label {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.detail-page__detail-value {
+  font-size: 0.95rem;
+  color: var(--color-text);
+  font-weight: 500;
+}
+
+/* Open Houses */
+.detail-page__no-openhouses {
+  font-size: 0.95rem;
+  color: var(--color-text-muted);
+  margin: 0;
+  padding: 20px;
+  text-align: center;
+  background: var(--color-surface);
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+}
+
+.detail-page__openhouses {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.detail-page__openhouse-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 16px 20px;
+  transition: border-color 0.2s ease;
+}
+
+.detail-page__openhouse-card:hover {
+  border-color: var(--color-primary);
+}
+
+.detail-page__openhouse-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.detail-page__openhouse-date {
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--color-text);
+}
+
+/* Status badges */
+.detail-page__openhouse-status {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 3px 10px;
+  border-radius: 6px;
+}
+
+.detail-page__openhouse-status--active {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+}
+
+.detail-page__openhouse-status--expired {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.detail-page__openhouse-status--upcoming {
+  background: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
+}
+
+.detail-page__openhouse-times {
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+}
+
+.detail-page__openhouse-remarks {
+  font-size: 0.88rem;
+  color: var(--color-text-muted);
+  margin: 8px 0 0;
+  font-style: italic;
+}
+
+/* Loading and error states */
+.detail-page__loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 120px 0;
+  color: var(--color-text-muted);
+}
+
+.detail-page__error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 120px 24px;
+  text-align: center;
+}
+
+.detail-page__error-icon {
+  font-size: 2.5rem;
+  line-height: 1;
+}
+
+.detail-page__error h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.detail-page__error p {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--color-text-muted);
+  max-width: 400px;
+}
+
+/* Responsive: stack to single column on smaller screens */
+@media (max-width: 900px) {
+  .detail-page__layout {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+
+  .detail-page {
+    padding: 24px 20px 36px;
+  }
+
+  .detail-page__stats {
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .detail-page__details-grid {
+    grid-template-columns: 1fr;
+  }
+}

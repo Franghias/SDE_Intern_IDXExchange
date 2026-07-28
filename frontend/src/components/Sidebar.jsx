@@ -1,10 +1,22 @@
+import { useLocation, useNavigate } from 'react-router-dom';
 import '../stylesheets/Sidebar.css';
 
-function Sidebar({ currentPage, onNavigate }) {
+function Sidebar() {
+  const location = useLocation();
+  const navigate = useNavigate();
+
   const navItems = [
-    { id: 'introduction', label: 'Introduction', icon: '🏠' },
-    { id: 'search', label: 'Search', icon: '🔍' },
+    { id: 'introduction', label: 'Introduction', icon: '🏠', path: '/' },
+    { id: 'search', label: 'Search', icon: '🔍', path: '/search' },
   ];
+
+  /**
+   * Determine if a nav item is active based on the current route.
+   */
+  function isActive(item) {
+    if (item.path === '/') return location.pathname === '/';
+    return location.pathname.startsWith(item.path);
+  }
 
   return (
     <aside className="sidebar" id="sidebar-nav">
@@ -20,8 +32,8 @@ function Sidebar({ currentPage, onNavigate }) {
           <button
             key={item.id}
             id={`nav-${item.id}`}
-            className={`sidebar__link${currentPage === item.id ? ' sidebar__link--active' : ''}`}
-            onClick={() => onNavigate(item.id)}
+            className={`sidebar__link${isActive(item) ? ' sidebar__link--active' : ''}`}
+            onClick={() => navigate(item.path)}
           >
             <span className="sidebar__link-icon">{item.icon}</span>
             {item.label}

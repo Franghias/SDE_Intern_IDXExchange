@@ -157,7 +157,7 @@ buttons, and ellipsis for large page counts
 - All component tests pass
 
 
-<!-- ### WEEK 8: PROPERTY DETAIL PAGE END-TO-END
+### WEEK 8: PROPERTY DETAIL PAGE END-TO-END
 #### Requirements: 
 - Install React Router and set up routes: / for ListingsPage, /property/:id for PropertyDetailPage
 - Make property cards clickable — clicking navigates to the detail page
@@ -171,7 +171,7 @@ buttons, and ellipsis for large page counts
 - Add the key to frontend/.env as REACT_APP_GOOGLE_MAPS_API_KEY=your_key
 - Restrict the key to localhost:3000 and the Maps Embed API only
 ### Deliverables:
-- Clicking a card navigates to /property/[listing-id]
+- Clicking a card navigates to /api/properties/[listing-id]
 - Back button returns to the listings page
 - Detail page shows all property fields listed above
 - PropertyImageCarousel: arrow buttons cycle through photos, counter shows X / Y
@@ -184,4 +184,4 @@ buttons, and ellipsis for large page counts
 - Get Directions link opens Google Maps in a new tab
 - Open houses show date, formatted times, and remarks if available
 - If no open houses, shows "No open houses scheduled"
-- Visiting /property/invalid-id shows an error, not a crash -->
+- Visiting /property/invalid-id shows an error, not a crash

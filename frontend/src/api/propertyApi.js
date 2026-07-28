@@ -42,3 +42,51 @@ export async function fetchProperties({ limit = 20, offset = 0, ...filters } = {
 
   return response.json();
 }
+
+/**
+ * Fetch a single property by its listing ID.
+ * @param {string} id - The property display ID
+ * @returns {Promise<Object>} Property detail object
+ */
+export async function fetchPropertyById(id) {
+  const url = `${API_BASE}/properties/${id}`;
+
+  let response;
+  try {
+    response = await fetch(url, { cache: 'no-store' });
+  } catch {
+    throw new Error('Unable to connect to the server. Please check your connection.');
+  }
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    const message = body?.message || `Request failed with status ${response.status}`;
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
+/**
+ * Fetch open house events for a property.
+ * @param {string} id - The property display ID
+ * @returns {Promise<{listingId: string, openHouses: Array}>}
+ */
+export async function fetchOpenHouses(id) {
+  const url = `${API_BASE}/properties/${id}/openhouses`;
+
+  let response;
+  try {
+    response = await fetch(url, { cache: 'no-store' });
+  } catch {
+    throw new Error('Unable to connect to the server. Please check your connection.');
+  }
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    const message = body?.message || `Request failed with status ${response.status}`;
+    throw new Error(message);
+  }
+
+  return response.json();
+}

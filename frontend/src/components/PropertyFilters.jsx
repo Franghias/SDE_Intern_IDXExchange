@@ -75,7 +75,7 @@ function PropertyFilters({ onSearch, onClear }) {
             id="filter-zipcode"
             name="zipcode"
             type="text"
-            placeholder="e.g. 97201"
+            placeholder="e.g. 90210"
             value={filters.zipcode}
             onChange={handleChange}
           />

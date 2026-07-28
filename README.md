@@ -1,6 +1,6 @@
 # IDXExchange
 
-A full-stack real estate listing platform with a searchable property grid, property detail pages with photos, and open house schedules.
+A full-stack real estate listing platform with a searchable property grid, property detail pages with photo carousels, full-screen galleries, interactive Google Maps, and open house schedules.
 
 ## Architecture
 
@@ -8,18 +8,24 @@ A full-stack real estate listing platform with a searchable property grid, prope
 ┌─────────────────────────────────────────────────────────────────┐
 │                         Browser (:3000)                         │
 │                                                                 │
-│   ┌──────────┐  ┌──────────────────────────────────────┐       │
-│   │ Sidebar  │  │  Main Content Canvas                  │       │
-│   │          │  │                                        │       │
-│   │ • Intro  │  │  IntroductionPage (hero + features)    │       │
-│   │ • Search │  │  ListingsPage (filters + card grid)    │       │
-│   │          │  │    └── PropertyFilters                  │       │
-│   │          │  │    └── Pagination (top)                 │       │
-│   │          │  │    └── PropertyCard[]                   │       │
-│   │          │  │    └── Pagination (bottom)              │       │
-│   └──────────┘  └──────────────────────────────────────┘       │
+│   React Router (BrowserRouter)                                  │
+│   ├── /           → IntroductionPage (hero + features)          │
+│   ├── /search     → ListingsPage (filters + card grid)          │
+│   │                 ├── PropertyFilters                         │
+│   │                 ├── Pagination (top & bottom)               │
+│   │                 └── PropertyCard[] (target="_blank")        │
+│   │                       └── PropertyImageCarousel             │
+│   │                       └── Open House Badge (green)          │
+│   │                                                             │
+│   └── /property/:id → PropertyDetailPage (opens in new tab)     │
+│                         ├── PropertyImageGallery (lightbox)     │
+│                         ├── PropertyDetails (dynamic grid)      │
+│                         ├── PropertyMap (Google Maps iframe)    │
+│                         └── Open Houses (active/expired/upcom)  │
 │                                                                 │
 │   fetch('/api/properties?city=Portland&beds=3')                 │
+│   fetch('/api/properties/:id')                                  │
+│   fetch('/api/properties/:id/openhouses')                       │
 │         │                                                       │
 └─────────┼───────────────────────────────────────────────────────┘
           │
@@ -33,9 +39,9 @@ A full-stack real estate listing platform with a searchable property grid, prope
 │     ├── requestLogger (middleware)                               │
 │     ├── /api/health       → health.js      → SELECT 1          │
 │     └── /api/properties   → properties.js  → SELECT ... FROM   │
-│              ├── /              (listing search + filters)       │
-│              ├── /:id           (property detail)               │
-│              └── /:id/openhouses (open house events)            │
+│              ├── /              (listing search + hasOpenHouse) │
+│              ├── /:id           (driven by PROPERTY_DETAIL_COLS)│
+│              └── /:id/openhouses (JOIN + status logic)          │
 │                        │                                        │
 │                   db.js (connection pool)                        │
 │                        │                                        │
@@ -65,22 +71,26 @@ IDXExchange/
 │   │   ├── app.js            # Express app (middleware + routes)
 │   │   ├── config/db.js      # MySQL connection pool
 │   │   ├── middleware/       # Request logger
-│   │   └── routes/           # health.js, properties.js
+│   │   └── routes/           # health.js, properties.js (configurable columns)
 │   ├── tests/                # Jest + Supertest (38 tests)
 │   ├── .env                  # Backend env vars (gitignored)
 │   └── package.json
 │
 ├── frontend/                 # React + Vite
 │   ├── src/
-│   │   ├── main.jsx          # React entry point
-│   │   ├── App.jsx           # Dashboard layout (sidebar + content)
-│   │   ├── api/              # API client (fetchProperties) + tests
-│   │   ├── utils/            # parsePhotos, formatPrice
-│   │   ├── test/             # Vitest setup + Pagination tests (22 tests)
-│   │   ├── stylesheets/      # All CSS (index, App, Sidebar, IntroductionPage,
-│   │   │                     #   PropertyCard, PropertyFilters, ListingsPage, Pagination)
-│   │   ├── components/       # Sidebar, PropertyCard, PropertyFilters, Pagination + tests
-│   │   └── pages/            # IntroductionPage, ListingsPage
+│   │   ├── main.jsx          # React entry point — wraps App in StrictMode
+│   │   ├── App.jsx           # React Router setup (BrowserRouter, Routes, Route)
+│   │   ├── api/              # API client (fetchProperties, fetchPropertyById, fetchOpenHouses)
+│   │   ├── utils/            # parsePhotos, formatPrice, formatTime, formatDate
+│   │   ├── test/             # Vitest setup + tests (22 tests)
+│   │   ├── stylesheets/      # All CSS (index, App, Sidebar, IntroductionPage, PropertyCard,
+│   │   │                     #   PropertyFilters, ListingsPage, Pagination, PropertyDetailPage,
+│   │   │                     #   PropertyImageCarousel, PropertyImageGallery, PropertyMap)
+│   │   ├── components/       # Sidebar, PropertyCard, PropertyFilters, Pagination,
+│   │   │                     #   PropertyImageCarousel, PropertyImageGallery, PropertyMap
+│   │   └── pages/            # IntroductionPage, ListingsPage, PropertyDetailPage
+│   ├── .env                  # VITE_GOOGLE_MAPS_API_KEY (gitignored)
+│   ├── .env.example          # Template for frontend env vars
 │   ├── vite.config.js        # Dev server + API proxy + Vitest config
 │   └── package.json
 │
@@ -117,9 +127,9 @@ Docker Compose starts a MySQL 8 container (`idx-mysql-local`) on port 3306. On f
 The Express server connects to MySQL using a connection pool (`db.js`). It exposes REST endpoints under `/api/`:
 
 - **`GET /api/health`** — Runs `SELECT 1` to verify the database is reachable
-- **`GET /api/properties`** — Queries `rets_property` with filters (city, price, beds, etc.) and pagination. Returns JSON with `total`, `limit`, `offset`, and `results` array
-- **`GET /api/properties/:id`** — Fetches a single property by `L_DisplayId`
-- **`GET /api/properties/:id/openhouses`** — Fetches open house events from `rets_openhouse`
+- **`GET /api/properties`** — Queries `rets_property` with filters and pagination. Includes a `hasOpenHouse` boolean flag indicating whether the property has an active open house
+- **`GET /api/properties/:id`** — Fetches property details dynamically using a configurable `PROPERTY_DETAIL_COLUMNS` array
+- **`GET /api/properties/:id/openhouses`** — Fetches open house events from `rets_openhouse` joined with `rets_property`, adding server-side status logic (`active`, `expired`, `upcoming`)
 
 Every request is logged by the `requestLogger` middleware with method, URL, status code, and duration.
 
@@ -127,54 +137,35 @@ Every request is logged by the `requestLogger` middleware with method, URL, stat
 
 The React app runs on port 3000 with a split-screen dashboard layout: a fixed sidebar on the left and a main content canvas on the right.
 
-**Navigation** uses React state (`currentPage` in `App.jsx`) to swap between two pages:
-- **Introduction** — hero section with headline, CTA, and feature cards
-- **Search** — property filters + listings grid
+**Navigation** uses `react-router-dom` to route between pages:
+- `/` — **Introduction Page** (hero section with headline, CTA, and feature cards)
+- `/search` — **Search Page** (property filters + listings grid + pagination + photo carousels)
+- `/property/:id` — **Property Detail Page** (photo gallery + lightbox, dynamic details grid, Google Maps embed, and open house schedule)
 
-The Vite dev server proxies any request starting with `/api` to the Express backend at `http://localhost:5000`.
-
-The data flow through the frontend:
-
-1. **`App`** renders `<Sidebar />` + the active page based on `currentPage` state
-2. **`ListingsPage`** renders `<PropertyFilters />` + `<Pagination />` (top) above the grid, and `<Pagination />` (bottom) below the grid
-3. User fills in filters (city, state, ZIP, price range, beds, baths) and clicks Search
-4. **`PropertyFilters`** strips empty values and calls `onSearch(filters)`
-5. **`ListingsPage`** resets to page 1, calls `fetchProperties({ limit, offset: 0, ...filters })`
-6. **API client** (`propertyApi.js`) adds only non-empty filter values to the URL
-7. **`ListingsPage`** receives the response and renders a `PropertyCard` for each result
-8. User can change pages via `<Pagination />` — filters are preserved, only `offset` changes
-9. User can change items per page (10/20/30/40/50) — resets to page 1, preserves filters
-10. If no results match, a "No properties found" message is shown with a suggestion to adjust filters
+Clicking any property card on the Search page opens the detail page in a **new browser tab** (`target="_blank"`), allowing users to keep browsing listings while examining property details.
 
 ### The full request lifecycle
 
 ```
 User opens http://localhost:3000
   → Vite serves index.html + React app
-  → React mounts <App /> with Sidebar + IntroductionPage
-  → User clicks "Search" in sidebar or "Start Searching" CTA
-  → App swaps to <ListingsPage />
+  → React mounts <App /> with BrowserRouter + Routes
+  → User navigates to /search (ListingsPage)
    → useEffect calls fetchProperties({ limit: 20, offset: 0 })
-   → Pagination renders below filters and below the grid (page 1 active)
-   → User applies filters (e.g. city=Portland, beds=3)
-   → PropertyFilters strips empty values, calls onSearch({ city: 'Portland', beds: '3' })
-   → ListingsPage resets to page 1, fetchProperties({ limit: 20, offset: 0, city: 'Portland', beds: '3' })
-   → fetch('/api/properties?limit=20&offset=0&city=Portland&beds=3')
-  → Vite proxy forwards to http://localhost:5000/api/properties?...
-  → Express requestLogger records the request
-  → properties.js validates query params
-  → properties.js builds SQL with data quality filters
-  → mysql2 sends query to MySQL via connection pool
-  → MySQL returns rows from rets_property
-  → Express sends JSON response { total, limit, offset, results }
-  → Vite proxy relays response to browser
-   → ListingsPage updates state with results, computes totalPages
-   → React renders PropertyCard components for matching properties
-   → Each PropertyCard parses photos JSON and shows the first image
-   → Pagination updates to reflect total pages (e.g. 1,2,3,4,5 … 24)
-   → User clicks page 3 → fetchProperties preserves filters, sets offset=40
-   → User changes per-page to 50 → resets to page 1, offset=0
-   → requestLogger logs: [timestamp] GET /api/properties?... 200 45ms
+   → Express executes query with LEFT JOIN to count active open houses
+   → Returns properties with hasOpenHouse boolean flag
+   → PropertyCard renders with photo carousel (PropertyImageCarousel) and green "Open House" badge
+   → User clicks a property card → opens /property/100002222 in a NEW TAB
+  → In the new tab: PropertyDetailPage mounts
+   → Parallel fetch: fetchPropertyById(100002222) and fetchOpenHouses(100002222)
+   → Express builds SELECT query using backend PROPERTY_DETAIL_COLUMNS array
+   → Express joins rets_openhouse & rets_property, calculates active/expired/upcoming statuses
+   → PropertyDetailPage renders:
+       - Left column: PropertyImageGallery (photos + thumbnail strip + full-screen lightbox)
+                      and dynamic "Property Details" grid (renders any extra backend columns)
+       - Right column: Price, Address, Stats bar, Description
+       - Below layout: PropertyMap (Google Maps Embed iframe + Get Directions link)
+       - Below map: Open Houses section with colored status badges (active=green, expired=red, upcoming=blue)
 ```
 
 ## Quick Start
@@ -207,6 +198,7 @@ npm run dev            # Starts on http://localhost:5000
 
 ```bash
 cd frontend
+cp .env.example .env   # First time only — add your VITE_GOOGLE_MAPS_API_KEY
 npm install
 npm run dev            # Starts on http://localhost:3000
 ```
@@ -245,3 +237,9 @@ npm test               # Runs 22 tests
 | `DB_NAME` | Database name |
 | `DB_PORT` | MySQL port (default: `3306`) |
 | `PORT` | Express server port (default: `5000`) |
+
+### `frontend/.env` (Vite)
+
+| Variable | Description |
+|----------|-------------|
+| `VITE_GOOGLE_MAPS_API_KEY` | Google Maps API key (Maps Embed API enabled) |

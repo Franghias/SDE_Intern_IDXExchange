@@ -215,3 +215,75 @@
   - All 22 tests pass
 - Files: `frontend/src/components/Pagination.jsx`, `frontend/src/test/Pagination.test.jsx`
 
+#### 2026-07-22 — Week 8: Property Detail Page End-to-End
+- **Installed `react-router-dom`** — frontend dependency for client-side routing
+- **Backend — Configurable property detail columns:**
+  - Added `PROPERTY_DETAIL_COLUMNS` array at top of `backend/src/routes/properties.js`
+  - Each entry maps a database column to an API field name: `{ db: 'L_SystemPrice', alias: 'listPrice' }`
+  - `buildDetailSelect()` dynamically generates the SELECT clause from this array
+  - Modified `GET /api/properties/:id` to use the configurable SELECT — adding/removing entries from the array automatically changes the API response
+  - Initial columns: listingId, displayId, address, city, state, zipCode, listPrice, beds, baths, sqft, yearBuilt, description, photos, latitude, longitude, propertyType, status
+- **Backend — `hasOpenHouse` flag on listing endpoint:**
+  - Modified `GET /api/properties` to include a `hasOpenHouse` boolean on each result
+  - Uses LEFT JOIN against a subquery that counts active open houses per `L_DisplayId`
+  - Active definition: `OH_StartDate <= OH_EndDate AND OH_EndDate >= CURDATE() AND OH_StartDate <= CURDATE()`
+  - Table aliases (`p.` prefix) used in WHERE clause to avoid ambiguity with the JOIN
+- **Backend — Open house validation rules:**
+  - Modified `GET /api/properties/:id/openhouses` with INNER JOIN to `rets_property` on `L_DisplayId`
+  - Added WHERE filter: `OH_StartDate <= OH_EndDate`
+  - Computes `status` field per open house: `'active'` (start ≤ today ≤ end), `'expired'` (end < today), `'upcoming'` (start > today)
+  - Returns `startDate` and `endDate` fields in response for frontend display
+- **Frontend — React Router setup:**
+  - Rewrote `frontend/src/App.jsx` — replaced `useState` routing with `BrowserRouter`, `Routes`, `Route`
+  - Routes: `/` (IntroductionPage), `/search` (ListingsPage), `/property/:id` (PropertyDetailPage)
+  - Updated `frontend/src/components/Sidebar.jsx` — uses `useNavigate()` and `useLocation()` for navigation and active state
+  - Updated `frontend/src/pages/IntroductionPage.jsx` — CTA button uses `useNavigate('/search')` instead of `onNavigateToSearch` prop
+- **Frontend — API client additions:**
+  - Modified `frontend/src/api/propertyApi.js` — added `fetchPropertyById(id)` and `fetchOpenHouses(id)` with same error handling pattern
+- **Frontend — Format utilities:**
+  - Modified `frontend/src/utils/format.js` — added `formatTime()` (converts "0 days 14:00:00" → "2:00 PM") and `formatDate()` (converts ISO dates to readable format)
+- **Frontend — PropertyCard updates:**
+  - Rewrote `frontend/src/components/PropertyCard.jsx`:
+    - Card is now an `<a>` tag with `target="_blank"` to open detail page in a new tab
+    - Replaced static image with `PropertyImageCarousel` component
+    - Added green "Open House" badge (shown only when `property.hasOpenHouse` is true)
+  - Modified `frontend/src/stylesheets/PropertyCard.css` — added anchor link reset styles, Open House badge styles (green, top-right position), removed static `.property-card__image` rules
+- **Frontend — New component: PropertyImageCarousel:**
+  - Created `frontend/src/components/PropertyImageCarousel.jsx` — image carousel for listing cards
+  - Prev/next arrow buttons cycle through photos; counter shows "X / Y"
+  - `e.stopPropagation()` and `e.preventDefault()` on arrows to prevent card link navigation
+  - Arrows and counter show on hover only; placeholder image when no photos
+  - Created `frontend/src/stylesheets/PropertyImageCarousel.css` — overlay arrows, counter badge, hover transitions
+- **Frontend — New component: PropertyImageGallery:**
+  - Created `frontend/src/components/PropertyImageGallery.jsx` — image gallery for detail page
+  - Main large image with click-to-enlarge hint; scrollable thumbnail strip below
+  - Clicking a thumbnail updates the main image; clicking the main image opens full-screen lightbox
+  - Lightbox: fixed overlay, centered image, prev/next arrows, close on click-outside or Escape key, left/right arrow key navigation
+  - Created `frontend/src/stylesheets/PropertyImageGallery.css` — gallery layout, lightbox with fade-in animation, responsive mobile adjustments
+- **Frontend — New component: PropertyMap:**
+  - Created `frontend/src/components/PropertyMap.jsx` — Google Maps Embed API iframe
+  - Only renders when both `latitude` and `longitude` are non-null
+  - Uses `import.meta.env.VITE_GOOGLE_MAPS_API_KEY` for the API key
+  - "Get Directions" link opens Google Maps in a new tab with `destination=LAT,LNG`
+  - Created `frontend/src/stylesheets/PropertyMap.css` — responsive map container, directions link styles
+- **Frontend — New page: PropertyDetailPage:**
+  - Created `frontend/src/pages/PropertyDetailPage.jsx` — full property detail page
+  - Fetches property detail and open houses in parallel via `Promise.all`
+  - Displays: back link, price, address, stats (beds/baths/sqft/year built), description, dynamic property details grid, image gallery, Google Maps, open house section
+  - Dynamic "Property Details" grid renders all fields not in `SPECIAL_FIELDS` automatically — driven by backend configurable columns
+  - `toLabel()` converts camelCase keys to readable labels (e.g., "propertyType" → "Property Type")
+  - Open houses: date, start/end times, remarks, colored status badges (active=green, expired=red, upcoming=blue)
+  - "No open houses scheduled" message when empty
+  - Loading spinner, error state with back link, handles invalid/missing IDs gracefully
+  - Created `frontend/src/stylesheets/PropertyDetailPage.css` — two-column layout (gallery left, info right), stats card, details grid, open house cards with status badges, responsive mobile stacking
+- **Frontend — Environment files:**
+  - Created `frontend/.env.example` — `VITE_GOOGLE_MAPS_API_KEY=your_key_here`
+  - Created `frontend/.env` — placeholder key (user replaces with actual key)
+- **Verification:**
+  - `vite build` succeeds without errors (47 modules, 20.77 KB CSS, 253.59 KB JS)
+  - All 22 existing tests pass (propertyApi: 4, Pagination: 14, PropertyFilters: 4)
+- **Frontend — PropertyDetailPage Layout Adjustment:**
+  - Moved the dynamic "Property Details" section into `.detail-page__gallery-col` directly below the `<PropertyImageGallery>` component
+  - Updated `PropertyDetailPage.css` with margin-top rules for proper spacing under the photo thumbnail strip
+- Files: `backend/src/routes/properties.js`, `frontend/src/App.jsx`, `frontend/src/components/Sidebar.jsx`, `frontend/src/pages/IntroductionPage.jsx`, `frontend/src/components/PropertyCard.jsx`, `frontend/src/stylesheets/PropertyCard.css`, `frontend/src/components/PropertyImageCarousel.jsx`, `frontend/src/stylesheets/PropertyImageCarousel.css`, `frontend/src/components/PropertyImageGallery.jsx`, `frontend/src/stylesheets/PropertyImageGallery.css`, `frontend/src/components/PropertyMap.jsx`, `frontend/src/stylesheets/PropertyMap.css`, `frontend/src/pages/PropertyDetailPage.jsx`, `frontend/src/stylesheets/PropertyDetailPage.css`, `frontend/src/api/propertyApi.js`, `frontend/src/utils/format.js`, `frontend/.env`, `frontend/.env.example`, `frontend/package.json`, `docs/decision_log.md`, `docs/change_log.md`
+

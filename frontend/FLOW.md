@@ -1,46 +1,52 @@
 # Frontend Architecture and Data Flow Guide
 
-This document provides a detailed breakdown of how the frontend components, state, and styles work together in the IDXExchange Property Listings application.
+This document provides a detailed breakdown of how the frontend components, routing, state, and styles work together in the IDXExchange Property Listings application.
 
 ---
 
 ## 1. Component Hierarchy & Layout Structure
 
-The layout is split into two major sections: the left sidebar (navigation) and the main content canvas.
+The layout is a split-screen dashboard: the left sidebar (navigation) and the main content canvas driven by React Router.
 
 ### Component Tree
-Here is how the React components are nested:
+Here is how the React components are nested and routed:
 
 ```mermaid
 graph TD
-    App[App.jsx] --> Sidebar[Sidebar.jsx]
-    App --> MainContent[main.app-content]
-    MainContent --> IntroPage[IntroductionPage.jsx]
-    MainContent --> ListingsPage[ListingsPage.jsx]
+    App[App.jsx - BrowserRouter] --> Sidebar[Sidebar.jsx]
+    App --> MainContent["main.app-content (Routes)"]
+    MainContent -->|Route /| IntroPage[IntroductionPage.jsx]
+    MainContent -->|Route /search| ListingsPage[ListingsPage.jsx]
+    MainContent -->|Route /property/:id| DetailPage[PropertyDetailPage.jsx]
+    
     ListingsPage --> PropertyFilters[PropertyFilters.jsx]
+    ListingsPage --> PaginationTop["Pagination.jsx (Top)"]
     ListingsPage --> PropertyCardGrid["Property Grid"]
-    PropertyCardGrid --> PropertyCard["PropertyCard.jsx (many)"]
+    ListingsPage --> PaginationBottom["Pagination.jsx (Bottom)"]
+    
+    PropertyCardGrid --> PropertyCard["PropertyCard.jsx (many - target='_blank')"]
+    PropertyCard --> Carousel[PropertyImageCarousel.jsx]
+    PropertyCard --> OpenHouseBadge["Open House Badge (Green)"]
+
+    DetailPage --> GalleryCol["Left Column (.detail-page__gallery-col)"]
+    DetailPage --> InfoCol["Right Column (.detail-page__info-col)"]
+    DetailPage --> PropertyMap[PropertyMap.jsx]
+    DetailPage --> OpenHousesSection["Open Houses List"]
+
+    GalleryCol --> Gallery[PropertyImageGallery.jsx]
+    GalleryCol --> PropertyDetails["Property Details (Dynamic Grid)"]
 ```
 
 ---
 
-## 2. Desktop vs. Mobile Layout (The CSS Grid Fix)
-
-Let's visualize how the sidebar and content are arranged and why the desktop layout was originally broken.
+## 2. Desktop vs. Mobile Layout (The CSS Grid Layout)
 
 ### Desktop View
 The parent container `.app-layout` is a CSS Grid with two columns: `260px` and `1fr` (remaining space).
 
-- **The Bug**:
-  - The `.sidebar` is `position: fixed; width: 260px;`. Since it is `fixed`, it is taken **out of the normal layout flow**.
-  - The browser's CSS Grid engine auto-places the next available *in-flow* element—which is `<main className="app-content">`—into the **first grid column** (260px wide).
-  - `.app-content` had `margin-left: 260px;`. Pushing it left by 260px inside a 260px column left exactly `0px` of width to render the contents.
-
-- **The Fix**:
-  - We explicitly tell the browser to place `.app-content` into the **second grid column** by adding `grid-column: 2;`.
-  - Since it is in column 2, it automatically starts at 260px, so we remove the `margin-left: 260px;` style.
-
-Here is the visual layout on Desktop:
+- `.sidebar` is `position: fixed; width: 260px;`.
+- `<main className="app-content">` is placed into the **second grid column** with `grid-column: 2;`.
+- The content canvas spans the remaining width and scrolls vertically independently.
 
 ```mermaid
 grid
@@ -60,126 +66,118 @@ grid
 
 ### Mobile View
 On screen widths of `768px` or less:
-- The `.sidebar` is changed to `position: relative` (making it in-flow).
-- The grid is redefined to stack columns vertically: `grid-template-columns: 1fr;`.
-- `.app-content` is placed at `grid-column: 1;`.
-- The sidebar becomes a top header, and the content flows naturally below it.
+- `.sidebar` becomes `position: relative` (in-flow horizontal header bar).
+- Grid layout switches to `grid-template-columns: 1fr;`.
+- `.app-content` occupies `grid-column: 1;`.
 
 ---
 
-## 3. Client-Side Page Navigation Flow
+## 3. Client-Side Routing & Multi-Tab Detail Navigation
 
-Because React Router is not introduced until later, page navigation is managed using local state in `App.jsx`.
+Page navigation is managed using `react-router-dom` (`BrowserRouter`, `Routes`, `Route`).
 
 ```mermaid
 sequenceDiagram
     participant User
-    participant App as App.jsx (State: currentPage)
+    participant App as App.jsx (BrowserRouter)
     participant Sidebar as Sidebar.jsx
-    participant Intro as IntroductionPage.jsx
-    participant Listings as ListingsPage.jsx
+    participant Card as PropertyCard.jsx
+    participant DetailPage as PropertyDetailPage.jsx (New Tab)
 
-    User->>Sidebar: Click "Search" button
-    Sidebar->>App: trigger onNavigate('search') callback
-    Note over App: Updates currentPage state to 'search'
-    Note over App: Triggers React re-render
-    App->>Listings: Mount and render ListingsPage
-    User->>Intro: Click "Start Searching" CTA
-    Intro->>App: trigger onNavigateToSearch() callback
-    Note over App: Updates currentPage state to 'search'
-    App->>Listings: Mount and render ListingsPage
+    User->>Sidebar: Click "Search" (/search)
+    Sidebar->>App: navigate('/search')
+    App->>App: Route /search matches
+    App-->>User: Render ListingsPage
+
+    User->>Card: Click property card
+    Card->>User: Open link in NEW TAB (target="_blank" href="/property/100002222")
+    Note over DetailPage: New tab opens /property/100002222
+    DetailPage->>App: Mount <PropertyDetailPage />
+    DetailPage->>DetailPage: Parallel fetch: fetchPropertyById() & fetchOpenHouses()
+    DetailPage-->>User: Render full property detail view
 ```
 
 ---
 
-## 4. Search and Filtering Flow (State & API Integration)
+## 4. Property Detail Page Data Flow
 
-Here is a step-by-step trace of how filtering a property works:
-
-### Interactive Sequence Diagram
+Here is a step-by-step trace of how the Property Detail Page loads and renders data:
 
 ```mermaid
 sequenceDiagram
     participant User
-    participant PF as PropertyFilters.jsx
-    participant LP as ListingsPage.jsx
-    participant API as propertyApi.js (fetchProperties)
-    participant Backend as Backend server (/api/properties)
+    participant DP as PropertyDetailPage.jsx
+    participant API as propertyApi.js
+    participant Backend as Express Backend (/api/properties)
+    participant DB as MySQL Database (rets_property & rets_openhouse)
 
-    Note over LP: useEffect triggers loadProperties() on mount
-    LP->>API: fetchProperties(defaultParams)
-    API->>Backend: GET /api/properties?limit=20&offset=0
-    Backend-->>LP: Returns list of all properties
+    User->>DP: Opens /property/:id (in new tab)
+    DP->>DP: useEffect extracts ID from useParams()
+    DP->>API: Promise.all([ fetchPropertyById(id), fetchOpenHouses(id) ])
+    
+    API->>Backend: GET /api/properties/:id
+    Backend->>DB: SELECT ${PROPERTY_DETAIL_COLUMNS} FROM rets_property WHERE L_DisplayId = ?
+    DB-->>Backend: Returns row
+    Backend-->>API: 200 OK with property details object
 
-    User->>PF: Fills in City: "Seattle", Beds: "3", MinPrice: "500000"
-    User->>PF: Clicks "Search" button
-    Note over PF: Form onSubmit triggered
-    Note over PF: Strips empty inputs and cleans "Any" selects
-    PF->>LP: trigger onSearch(filters) callback
-    Note over LP: Updates activeFilters state
-    Note over LP: Sets loading=true, error=null
-    LP->>API: fetchProperties({ limit: 20, offset: 0, city: "Seattle", beds: "3", minPrice: "500000" })
-    Note over API: URLSearchParams constructed (excludes null/empty values)
-    API->>Backend: GET /api/properties?limit=20&offset=0&city=Seattle&beds=3&minPrice=500000
-    Backend-->>LP: Returns 200 OK with filtered JSON results
-    Note over LP: Sets properties=data.results, loading=false
-    Note over LP: Maps results to <PropertyCard /> components
+    API->>Backend: GET /api/properties/:id/openhouses
+    Backend->>DB: SELECT FROM rets_openhouse INNER JOIN rets_property ...
+    DB-->>Backend: Returns open house rows
+    Backend->>Backend: Computes server-side status (active/expired/upcoming)
+    Backend-->>API: 200 OK with open houses array
+
+    API-->>DP: Return [ propertyData, openHouseData ]
+    DP->>DP: Filter extraFields (property fields not in SPECIAL_FIELDS)
+    DP-->>User: Render Gallery, Dynamic Details Grid, Info Column, PropertyMap, & Open Houses
 ```
 
 ---
 
-## 5. Data Flow Details (From DB representation to UI components)
+## 5. Data Flow Details & Mappings
 
-### Property Image & Field Mapping
-The keys in the returned property object match the database columns mapped via alias in the SQL query:
+### Listing & Property Field Mappings
 
-| DB Column | Backend alias / Frontend key | Description |
-|-----------|------------------------------|-------------|
-| `L_ListingID` | `listingId` | Unique MLS listing identification string |
-| `L_DisplayId` | `propertyId` | User-facing display ID string |
-| `L_SystemPrice` | `listPrice` | Numeric listing price in USD |
-| `L_Address` | `address` | Street address |
-| `L_City` | `city` | City name |
-| `L_State` | `state` | State code |
-| `L_Zip` | `zipCode` | 5-digit ZIP code |
-| `L_Keyword2` | `beds` | Number of bedrooms |
-| `LM_Dec_3` | `baths` | Number of bathrooms |
-| `LM_Int2_3` | `sqft` | Square footage |
-| `L_Photos` | `photos` | JSON string array of image URLs |
+The backend maps database columns into structured JSON objects:
 
-### Rendering inside `<PropertyCard />`
-The photos for a listing are stored in the database as a raw JSON string array in the `L_Photos` column (e.g. `["http://...", "http://..."]`).
-The frontend formats and uses this as follows:
+| DB Column | API Alias | Component / Feature |
+|-----------|-----------|--------------------|
+| `L_ListingID` | `listingId` | Unique listing ID |
+| `L_DisplayId` | `displayId` / `propertyId` | URL parameter & property lookup ID |
+| `L_SystemPrice` | `listPrice` | Formatted via `formatPrice()` |
+| `L_Address` | `address` | Card & Detail page header |
+| `L_City` | `city` | Location line & filter |
+| `L_State` | `state` | Location line & filter |
+| `L_Zip` | `zipCode` | Location line & filter |
+| `L_Keyword2` | `beds` | Stats bar |
+| `LM_Dec_3` | `baths` | Stats bar |
+| `LM_Int2_3` | `sqft` | Stats bar |
+| `YearBuilt` | `yearBuilt` | Detail page stats bar |
+| `L_Remarks` | `description` | Detail page description section |
+| `L_Photos` | `photos` | Parsed via `parsePhotos()` into URL array |
+| `LMD_MP_Latitude` | `latitude` | Used by `<PropertyMap />` |
+| `LMD_MP_Longitude` | `longitude` | Used by `<PropertyMap />` |
+| `L_Type_` | `propertyType` | Dynamic "Property Details" grid |
+| `L_Status` | `status` | Dynamic "Property Details" grid |
+| `[Other Cols]` | `[alias]` | Dynamic "Property Details" grid (via `PROPERTY_DETAIL_COLUMNS`) |
 
-```
-[Backend response JSON] 
-  {
-     "listingId": "10243",
-     "propertyId": "MD10243",
-     "address": "123 Main St",
-     "city": "Portland",
-     "state": "OR",
-     "zipCode": "97201",
-     "listPrice": 450000,
-     "beds": 3,
-     "baths": 2,
-     "sqft": 1850,
-     "photos": "[\"https://.../img1.jpg\", \"https://.../img2.jpg\"]"
-  }
-     ↓
-Passed to <PropertyCard property={property} />
-     ↓
-Calls parsePhotos(property.photos) in utils/format.js
-     ↓
-Uses JSON.parse(str) inside try/catch block
-     ↓
-If valid JSON array: Returns ["https://.../img1.jpg", "https://.../img2.jpg"]
-If invalid/empty: Returns []
-     ↓
-Card displays first item: photos[0] (or fallback placeholder image if empty)
-```
+### Open House Event Object Structure
 
-### Formatting Utilities in `utils/format.js`
-1. `formatPrice(price)`: Converts raw database numbers into formatted US currency.
-   - Example: `425000` → `$425,000` (calls `.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })`).
-2. `parsePhotos(photosStr)`: Safely decodes JSON array strings representing photos, preventing rendering crashes on missing or malformed database fields.
+Returned by `GET /api/properties/:id/openhouses`:
+
+| Property | Type | Description / UI Badge |
+|----------|------|------------------------|
+| `listingId` | String | Property display ID |
+| `date` | String | Formatted via `formatDate()` |
+| `startTime` | String | Formatted via `formatTime()` |
+| `endTime` | String | Formatted via `formatTime()` |
+| `status` | String | `"active"` (🟢 Green), `"expired"` (🔴 Red), `"upcoming"` (🔵 Blue) |
+| `OpenHouseRemarks` | String | Agent remarks string |
+
+---
+
+## 6. Formatting Utilities (`utils/format.js`)
+
+1. **`formatPrice(price)`**: Converts numbers to USD currency format (`459900` → `$459,900`).
+2. **`parsePhotos(photosStr)`**: Safely parses `L_Photos` JSON strings into URL arrays.
+3. **`formatTime(timeStr)`**: Formats database time strings (`"0 days 14:00:00"` → `"2:00 PM"`).
+4. **`formatDate(dateStr)`**: Formats ISO date strings into readable dates (`"Sat, Jun 15, 2026"`).

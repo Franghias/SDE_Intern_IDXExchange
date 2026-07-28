@@ -1,0 +1,40 @@
+/* ===== Property Map ===== */
+.property-map {
+  margin-top: 32px;
+}
+
+.property-map__title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 16px;
+}
+
+.property-map__container {
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--color-skeleton);
+  aspect-ratio: 16 / 9;
+}
+
+.property-map__iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+}
+
+.property-map__directions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  color: var(--color-primary);
+  font-weight: 500;
+  font-size: 0.95rem;
+  transition: color 0.2s ease;
+}
+
+.property-map__directions:hover {
+  color: var(--color-primary-hover);
+}
