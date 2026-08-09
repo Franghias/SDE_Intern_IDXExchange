@@ -58,6 +58,38 @@
   z-index: 2;
 }
 
+/* Favorite heart button */
+.property-card__favorite-btn {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3;
+  transition: transform 0.2s ease, background 0.2s ease;
+  line-height: 1;
+  padding: 0;
+}
+
+.property-card__favorite-btn:hover {
+  transform: scale(1.15);
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.property-card__favorite-btn--active {
+  color: #ef4444;
+  background: rgba(0, 0, 0, 0.55);
+}
+
 /* Body */
 .property-card__body {
   padding: 16px 20px 20px;
@@ -98,3 +130,25 @@
   font-size: 0.75rem;
 }
 
+/* Status badge — bottom-right of card body */
+.property-card__status-badge {
+  display: inline-block;
+  margin-top: -25px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 3px 10px;
+  border-radius: 6px;
+  float: right;
+}
+
+.property-card__status-badge--active {
+  background: rgba(34, 197, 94, 0.12);
+  color: #16a34a;
+}
+
+.property-card__status-badge--inactive {
+  background: rgba(239, 68, 68, 0.12);
+  color: #dc2626;
+}

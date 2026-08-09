@@ -135,3 +135,81 @@ Every page within the application must adhere to a strict split-screen, multi-co
     
   - In listing page, add a small label or icon with the text "Open House" with green color to indicate if the property has an open house (in the propertyCard and on the right side).
   - In the property detail page, add a section that displays all the open houses for the property.
+
+
+### WEEK 9: Advanced Feature (Required) + Performance Optimization
+#### Part A — Advanced Feature
+##### 1. Sorting:
+- Sort is only have two types for all for columns (price, date listed, square footage, and beds): 
+  - Low to High (Ascending)
+  - High to Low (Descending)
+- Column that can be sorted: 
+  - Price -> L_SystemPrice (in rets_property table) (current format: 545000)
+  - Date listed -> OnMarketDate (in rets_property table) (current format: YYYY-MM-DD) (for high to low, put the newest date first)
+  - Square footage -> LM_Int2_3 (in rets_property table) (current format: 2025)
+  - Beds -> L_Keyword2 (in rets_property table) (current format: 2)
+  - Baths -> LM_Dec_3 (in rets_property table) (current format: 2.0)
+- Place frontend sort section to be in the same rows with pagination and Per page and on the left side.
+- It contains a dropdown with the options:
+  - Price: Low to High, High to Low
+  - Date listed: Low to High, High to Low
+  - Square footage: Low to High, High to Low
+  - Beds: Low to High, High to Low
+  - Baths: Low to High, High to Low
+- The sort works for all filters at once (for example, if I filter by city, price, and beds, the sort will work for all of them at once).
+- Add tests for this sort feature.
+
+- This is not part of the sort feature but I want to do these:
+  - Display the column `StandardStatus` in rets_property to be in the property card that I can see in ListingPage.jsx and PropertyDetailPage.jsx. Display if the status value is 'Active' with green color placed in the bottom right corner in the PropertyCard.jsx that shows in ListingPage.jsx. If the status is not 'Active', display it with red color and its value (for example, 'Pending' with red color).
+  - Adjust properties.js and other relevants files to use `StandardStatus` instead of `L_Status`.
+
+  ##### 2. Favorites:
+  - Add endpoint from the frontend `/property/favorites` and backend `/api/properties/favorites`.
+  - To access the Favorite page, simply add the sidebar with the word `Favorite`, which is similar to Introduction and Search pages.
+  - In the frontend, add a list for the favorited properties and the data will come from the backend endpoint.
+  - In the backend, it will check the login status by the cookies
+  - The Favorite page has the same features as the Search page (filters, sort, pagination, etc.)
+
+  ##### 3. Open House Calendar Page (Created August 2, 2026):
+  - **Component Structure (`OpenHousesPage.jsx` & `OpenHousesPage.css`)**:
+    - **Header**: Page title and subtitle with guidance on calendar and date range filtering.
+    - **AI Chatbot (`ChatAssistant`)**: Positioned above the calendar and filters with full support for date range parsing (`startDate`, `endDate`) and property filter criteria.
+    - **Month-View Calendar**: Built with `react-big-calendar` and `date-fns` (`dateFnsLocalizer`).
+      - Interactive 2-click slot picking: 1st click sets start date, 2nd click sets end date (auto-swaps if end < start) and immediately triggers search.
+      - Re-clicking endpoints deselects or clears range.
+      - Day cell styling (`dayPropGetter`): `.calendar-day--has-event` (days with open house events), `.calendar-day--range-endpoint` (start/end selections), `.calendar-day--in-range` (interval highlight).
+      - Event styling (`eventPropGetter`): `.calendar-event--active` (green), `.calendar-event--upcoming` (blue/purple), `.calendar-event--expired` (red/muted).
+      - Event clicks open the target property in a new tab (`/property/:id`).
+    - **Manual Date Range Form**: Inputs for `Start Date` (`#range-start`) and `End Date` (`#range-end`) with "Apply Filter" and "Clear Filter" actions.
+    - **Property Filters & Sort Controls**: Embedded `PropertyFilters` and `SortControls` components placed below the calendar.
+    - **Active Filter Chip**: Displays `📅 Filtering: <start> — <end>` with clear button and dynamic local timezone date formatting.
+    - **Open House Card Grid**: Cards display `PropertyImageCarousel`, list price, status badge, address, formatted date (`formatDate`), time range (`formatTime`), bed/bath/sqft stats, and `OpenHouseType` tag.
+    - **Top & Bottom Pagination**: Full pagination controls with items-per-page selector (`[10, 20, 30, 40, 50]`).
+    - **Module-Level In-Memory Cache**: `openHousesCache` preserves calendar events, card results, active range, date inputs, pagination, sort, and property filters across component navigation.
+
+### WEEK 10: AI Conversational Chatbot Assistant, In-Memory Caching, Dedicated AI Search, Timezone Date Formatting & Conversational Guards
+- **Chat API Proxy (`POST /api/chat`)**:
+  - Express backend endpoint proxies requests to OpenRouter API (`cohere/north-mini-code:free`).
+  - System prompt enforces security rules, JSON-only format (`{ message: string, filters: object }`), and sorting capabilities (`sortBy` and `sortOrder` for `price`, `date`, `sqft`, `beds`, `baths`).
+- **Conversational Response & Redundant Query Guard**:
+  - System prompt instructs LLM: `If the user's message is polite ("thank you", "thanks", "ok"), a greeting ("hi", "hello"), small talk, or does NOT ask to change any search filters, set "filters": {} (an empty object).`
+  - Frontend components (`ChatAssistant.jsx` and `ChatSearchPage.jsx`) compare keys across both new and active filters (`new Set([...Object.keys(newFilters), ...Object.keys(activeFilters)])`). `onFiltersChange` and `loadProperties` are only called if at least one filter value changed.
+- **Dynamic Local Timezone Date Formatting (`format.js`)**:
+  - Parsed `YYYY-MM-DD` date-only strings using `new Date(year, month - 1, day)` (local midnight) instead of `new Date("YYYY-MM-DD")` (UTC midnight).
+  - Formats date strings using `date.toLocaleDateString(locale || undefined, ...)`. Ensures date displays like `Filtering: Wednesday, Jul 31, 2024` accurately render as `Thursday, Aug 1, 2024` across all global timezones without offset shifts.
+- **In-Memory Component Page Caching**:
+  - Module-level variables (`listingsCache`, `favoritesCache`, `openHousesCache`, `chatSearchCache`) save page state during React Router route transitions.
+  - Submitting new filters, changing sort options, picking date ranges, or changing page numbers updates the cache and executes fresh API fetches.
+
+### WEEK 9: PART B — PERFORMANCE OPTIMIZATION & INDEXING GUIDANCE
+- **Sargable Query Optimization (`LOWER()` removal)**:
+  - Do NOT wrap SQL columns inside functions like `LOWER(p.L_City)` in WHERE clauses. This disables B-Tree index traversal.
+  - Normalize user strings in JavaScript using `toTitleCase()`. MySQL's `utf8mb4_0900_ai_ci` collation performs case-insensitive comparisons natively using index keys.
+- **Correlated `EXISTS` vs Derived `LEFT JOIN`**:
+  - For checking existence of related records (such as `hasOpenHouse`), use `EXISTS (SELECT 1 FROM rets_openhouse WHERE ...)` instead of `LEFT JOIN (SELECT ... GROUP BY)`.
+  - Correlated `EXISTS` avoids temporary table materialization across 4,000+ open house rows and executes only targeted index probes on paginated items.
+- **Composite Indexes**:
+  - `rets_property`: `idx_city_price (L_City, L_SystemPrice)` eliminates filesort when sorting city filtered results by price.
+  - `rets_openhouse`: `idx_date_startTime_displayId (OpenHouseDate, OH_StartTime, L_DisplayId)` supports date range scans and time sorting in a single index structure.
+
+

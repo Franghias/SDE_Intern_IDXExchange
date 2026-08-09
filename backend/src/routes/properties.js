@@ -4,6 +4,19 @@ const pool = require('../config/db');
 const router = express.Router();
 
 /**
+ * Whitelist of sortable columns.
+ * Keys are the API-facing sort names; values are the actual SQL column names.
+ * Using actual column names prevents silent failures from RESO name mismatches.
+ */
+const SORT_WHITELIST = {
+  price: 'L_SystemPrice',
+  date: 'OnMarketDate',
+  sqft: 'LM_Int2_3',
+  beds: 'L_Keyword2',
+  baths: 'LM_Dec_3',
+};
+
+/**
  * Configurable columns for the property detail endpoint.
  * Add or remove entries here to control which fields GET /api/properties/:id returns.
  * Each entry: { db: 'DB_COLUMN_NAME', alias: 'apiFieldName' }
@@ -25,7 +38,7 @@ const PROPERTY_DETAIL_COLUMNS = [
   { db: 'LMD_MP_Latitude', alias: 'latitude' },
   { db: 'LMD_MP_Longitude', alias: 'longitude' },
   { db: 'L_Type_', alias: 'propertyType' },
-  { db: 'L_Status', alias: 'status' },
+  { db: 'StandardStatus', alias: 'status' },
   { db: 'Flooring', alias: 'flooring' }
 ];
 
@@ -150,6 +163,35 @@ function validateQueryParams(query) {
     }
   }
 
+  // -- Sorting (supports comma-separated multi-column: sortBy=price,date&sortOrder=asc,desc) --
+  if (query.sortBy !== undefined) {
+    const sortByFields = query.sortBy.split(',').map((s) => s.trim().toLowerCase());
+    const sortOrderValues = query.sortOrder
+      ? query.sortOrder.split(',').map((s) => s.trim().toLowerCase())
+      : sortByFields.map(() => 'asc');
+
+    // Validate field count matches order count
+    if (sortOrderValues.length !== sortByFields.length) {
+      errors.push('sortBy and sortOrder must have the same number of values');
+    } else {
+      const validatedSort = [];
+      for (let i = 0; i < sortByFields.length; i++) {
+        if (!SORT_WHITELIST[sortByFields[i]]) {
+          errors.push(`sortBy must be one of: ${Object.keys(SORT_WHITELIST).join(', ')}`);
+          break;
+        }
+        if (sortOrderValues[i] !== 'asc' && sortOrderValues[i] !== 'desc') {
+          errors.push('sortOrder must be asc or desc');
+          break;
+        }
+        validatedSort.push({ field: sortByFields[i], order: sortOrderValues[i] });
+      }
+      if (errors.length === 0) {
+        filters.sortCriteria = validatedSort;
+      }
+    }
+  }
+
   return { errors, filters };
 }
 
@@ -158,37 +200,39 @@ function validateQueryParams(query) {
  * Always includes data quality filters, then appends user-provided filters.
  */
 function buildWhereClause(filters) {
-  const conditions = [
-    // Data quality filters (SUPPORT_TASKS.md)
-    "L_City IS NOT NULL AND L_City != ''",
-    "L_State IS NOT NULL AND L_State != ''",
-    "L_Zip IS NOT NULL AND L_Zip != '' AND L_Zip REGEXP '^[0-9]{5}$'",
-    "L_SystemPrice IS NOT NULL AND L_SystemPrice >= 0",
-    "L_Keyword2 IS NOT NULL AND L_Keyword2 >= 0",
-    "LM_Dec_3 IS NOT NULL AND LM_Dec_3 >= 0",
-    "L_City REGEXP '^[A-Za-z ]+$'",
-    "L_State REGEXP '^[A-Za-z ]+$'",
-  ];
+  const conditions = [];
   const params = [];
 
+  // City: direct equality with normalized value (enables idx_city / composite indexes)
   if (filters.city) {
-    conditions.push('LOWER(L_City) = LOWER(?)');
+    conditions.push('L_City = ?');
     params.push(filters.city);
+  } else {
+    conditions.push("L_City IS NOT NULL AND L_City != '' AND L_City REGEXP '^[A-Za-z ]+$'");
   }
 
+  // State: direct equality with normalized value
   if (filters.state) {
-    conditions.push('LOWER(L_State) = LOWER(?)');
+    conditions.push('L_State = ?');
     params.push(filters.state);
+  } else {
+    conditions.push("L_State IS NOT NULL AND L_State != '' AND L_State REGEXP '^[A-Za-z ]+$'");
   }
 
+  // Zipcode
   if (filters.zipcode) {
     conditions.push('L_Zip = ?');
     params.push(filters.zipcode);
+  } else {
+    conditions.push("L_Zip IS NOT NULL AND L_Zip != '' AND L_Zip REGEXP '^[0-9]{5}$'");
   }
 
+  // Price range
   if (filters.minPrice !== undefined) {
     conditions.push('L_SystemPrice >= ?');
     params.push(filters.minPrice);
+  } else {
+    conditions.push('L_SystemPrice IS NOT NULL AND L_SystemPrice >= 0');
   }
 
   if (filters.maxPrice !== undefined) {
@@ -196,14 +240,20 @@ function buildWhereClause(filters) {
     params.push(filters.maxPrice);
   }
 
+  // Bedrooms
   if (filters.beds !== undefined) {
     conditions.push('L_Keyword2 = ?');
     params.push(filters.beds);
+  } else {
+    conditions.push('L_Keyword2 IS NOT NULL AND L_Keyword2 >= 0');
   }
 
+  // Bathrooms
   if (filters.baths !== undefined) {
     conditions.push('LM_Dec_3 = ?');
     params.push(filters.baths);
+  } else {
+    conditions.push('LM_Dec_3 IS NOT NULL AND LM_Dec_3 >= 0');
   }
 
   return {
@@ -228,8 +278,7 @@ router.get('/', async (req, res) => {
     const [countRows] = await pool.query(countSQL, params);
     const total = countRows[0].total;
 
-    // Fetch paginated results with hasOpenHouse flag
-    // An active open house: L_DisplayId matches, OH_StartDate <= OH_EndDate, OH_EndDate >= today
+    // Fetch paginated results with hasOpenHouse flag using efficient EXISTS subquery
     const dataSQL = `
       SELECT
         p.L_ListingID   AS listingId,
@@ -243,17 +292,20 @@ router.get('/', async (req, res) => {
         p.LM_Dec_3      AS baths,
         p.LM_Int2_3     AS sqft,
         p.L_Photos      AS photos,
-        CASE WHEN oh_active.cnt > 0 THEN TRUE ELSE FALSE END AS hasOpenHouse
+        p.StandardStatus AS status,
+        EXISTS (
+          SELECT 1
+          FROM rets_openhouse oh
+          WHERE oh.L_DisplayId = p.L_DisplayId
+            AND oh.OH_StartDate <= oh.OH_EndDate
+            AND oh.OH_EndDate >= CURDATE()
+            AND oh.OH_StartDate <= CURDATE()
+        ) AS hasOpenHouse
       FROM rets_property p
-      LEFT JOIN (
-        SELECT L_DisplayId, COUNT(*) AS cnt
-        FROM rets_openhouse
-        WHERE OH_StartDate <= OH_EndDate
-          AND OH_EndDate >= CURDATE()
-          AND OH_StartDate <= CURDATE()
-        GROUP BY L_DisplayId
-      ) oh_active ON p.L_DisplayId = oh_active.L_DisplayId
       WHERE ${whereSQL.replace(/(?<!p\.)L_/g, 'p.L_').replace(/(?<!p\.)LM_/g, 'p.LM_')}
+      ${filters.sortCriteria
+        ? `ORDER BY ${filters.sortCriteria.map((s) => `p.${SORT_WHITELIST[s.field]} ${s.order.toUpperCase()}`).join(', ')}`
+        : ''}
       LIMIT ? OFFSET ?
     `;
     const dataParams = [...params, filters.limit, filters.offset];
@@ -323,6 +375,109 @@ function extractAllData(allDataStr) {
     return {};
   }
 }
+
+// POST /api/properties/favorites — fetch properties by a list of IDs (with filters, sort, pagination)
+// Registered BEFORE /:id/openhouses so Express doesn't match "favorites" as an :id
+router.post('/favorites', async (req, res) => {
+  const { ids } = req.body || {};
+
+  // Validate IDs array
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({
+      status: 'error',
+      message: 'ids must be a non-empty array of property IDs',
+    });
+  }
+
+  // Validate each ID
+  for (const id of ids) {
+    if (!isValidListingId(String(id))) {
+      return res.status(400).json({
+        status: 'error',
+        message: `Invalid property ID: ${id}. IDs must be numeric and at most 20 characters`,
+      });
+    }
+  }
+
+  // Validate query params (filters, sort, pagination)
+  const { errors, filters } = validateQueryParams(req.query);
+  if (errors.length > 0) {
+    return res.status(400).json({ status: 'error', errors });
+  }
+
+  try {
+    const { whereSQL, params } = buildWhereClause(filters);
+
+    // Build placeholders for the IN clause
+    const placeholders = ids.map(() => '?').join(', ');
+    const idsWhereClause = `p.L_DisplayId IN (${placeholders})`;
+
+    // Prefix table alias on base WHERE clause columns
+    const prefixedWhere = whereSQL.replace(/(?<!p\.)L_/g, 'p.L_').replace(/(?<!p\.)LM_/g, 'p.LM_');
+
+    // Count total matching favorites
+    const countSQL = `
+      SELECT COUNT(*) AS total
+      FROM rets_property p
+      WHERE ${prefixedWhere} AND ${idsWhereClause}
+    `;
+    const countParams = [...params, ...ids];
+    const [countRows] = await pool.query(countSQL, countParams);
+    const total = countRows[0].total;
+
+    // Fetch paginated results with hasOpenHouse flag using efficient EXISTS subquery
+    const dataSQL = `
+      SELECT
+        p.L_ListingID   AS listingId,
+        p.L_DisplayId   AS propertyId,
+        p.L_SystemPrice AS listPrice,
+        p.L_Address     AS address,
+        p.L_City        AS city,
+        p.L_State       AS state,
+        p.L_Zip         AS zipCode,
+        p.L_Keyword2    AS beds,
+        p.LM_Dec_3      AS baths,
+        p.LM_Int2_3     AS sqft,
+        p.L_Photos      AS photos,
+        p.StandardStatus AS status,
+        EXISTS (
+          SELECT 1
+          FROM rets_openhouse oh
+          WHERE oh.L_DisplayId = p.L_DisplayId
+            AND oh.OH_StartDate <= oh.OH_EndDate
+            AND oh.OH_EndDate >= CURDATE()
+            AND oh.OH_StartDate <= CURDATE()
+        ) AS hasOpenHouse
+      FROM rets_property p
+      WHERE ${prefixedWhere} AND ${idsWhereClause}
+      ${filters.sortCriteria
+        ? `ORDER BY ${filters.sortCriteria.map((s) => `p.${SORT_WHITELIST[s.field]} ${s.order.toUpperCase()}`).join(', ')}`
+        : ''}
+      LIMIT ? OFFSET ?
+    `;
+    const dataParams = [...params, ...ids, filters.limit, filters.offset];
+    const [rows] = await pool.query(dataSQL, dataParams);
+
+    // Convert hasOpenHouse from 0/1 to boolean
+    const results = rows.map((row) => ({
+      ...row,
+      hasOpenHouse: Boolean(row.hasOpenHouse),
+    }));
+
+    res.json({
+      total,
+      limit: filters.limit,
+      offset: filters.offset,
+      results,
+    });
+  } catch (err) {
+    console.error('Favorites query failed:', err.message);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to fetch favorite properties',
+    });
+  }
+});
 
 // GET /api/properties/:id/openhouses — open house events for a property
 // Registered BEFORE /:id so Express doesn't capture "openhouses" as an :id

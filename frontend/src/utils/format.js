@@ -38,12 +38,23 @@ export function formatTime(timeStr) {
 /**
  * Format a date string (YYYY-MM-DD or ISO) into a readable format.
  */
-export function formatDate(dateStr) {
+export function formatDate(dateStr, locale) {
   if (!dateStr) return '';
-  const date = new Date(dateStr);
+
+  let date;
+  // If dateStr is a date-only string (YYYY-MM-DD), parse as local year/month/day
+  // so it represents midnight in the user's local timezone, rather than UTC midnight.
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    const [year, month, day] = dateStr.split('-').map(Number);
+    date = new Date(year, month - 1, day);
+  } else {
+    date = new Date(dateStr);
+  }
+
   if (isNaN(date.getTime())) return dateStr;
-  return date.toLocaleDateString('en-US', {
-    weekday: 'short',
+
+  return date.toLocaleDateString(locale || undefined, {
+    weekday: 'long',
     year: 'numeric',
     month: 'short',
     day: 'numeric',

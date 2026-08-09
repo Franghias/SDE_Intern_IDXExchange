@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { fetchPropertyById, fetchOpenHouses } from '../api/propertyApi';
 import { formatPrice, formatTime, formatDate } from '../utils/format';
+import { useFavorites } from '../hooks/useFavorites';
 import PropertyImageGallery from '../components/PropertyImageGallery';
 import PropertyMap from '../components/PropertyMap';
 import '../stylesheets/PropertyDetailPage.css';
@@ -12,7 +13,15 @@ import '../stylesheets/PropertyDetailPage.css';
 const SPECIAL_FIELDS = new Set([
   'listingId', 'displayId', 'address', 'city', 'state', 'zipCode',
   'listPrice', 'beds', 'baths', 'sqft', 'yearBuilt', 'description',
-  'photos', 'latitude', 'longitude',
+  'photos', 'latitude', 'longitude', 'status',
+]);
+
+/**
+ * Open house fields rendered by dedicated UI — excluded from the details grid.
+ */
+const OPEN_HOUSE_SPECIAL_FIELDS = new Set([
+  'date', 'startTime', 'endTime', 'status', 'listingId',
+  'startDate', 'endDate', 'OpenHouseRemarks',
 ]);
 
 /**
@@ -32,6 +41,8 @@ function PropertyDetailPage() {
   const [openHouses, setOpenHouses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const { isFavorite, toggleFavorite } = useFavorites();
 
   useEffect(() => {
     let cancelled = false;
@@ -86,6 +97,8 @@ function PropertyDetailPage() {
 
   if (!property) return null;
 
+  const favState = isFavorite(property.displayId);
+
   // Collect extra fields (those not in SPECIAL_FIELDS) for the "Property Details" section
   const extraFields = Object.entries(property).filter(
     ([key, value]) => !SPECIAL_FIELDS.has(key) && value != null && value !== ''
@@ -120,10 +133,33 @@ function PropertyDetailPage() {
 
         {/* Right column: Info */}
         <div className="detail-page__info-col">
-          {/* Price */}
-          <h1 className="detail-page__price" id="property-price">
-            {formatPrice(property.listPrice)}
-          </h1>
+          {/* Header row with price and favorite button */}
+          <div className="detail-page__header-row">
+            <h1 className="detail-page__price" id="property-price">
+              {formatPrice(property.listPrice)}
+            </h1>
+            <button
+              className={`detail-page__favorite-btn${favState ? ' detail-page__favorite-btn--active' : ''}`}
+              onClick={() => toggleFavorite(property.displayId)}
+              aria-label={favState ? 'Remove from favorites' : 'Add to favorites'}
+              title={favState ? 'Remove from favorites' : 'Add to favorites'}
+            >
+              <span className="detail-page__favorite-icon">{favState ? '♥' : '♡'}</span>
+              <span>{favState ? 'Saved' : 'Save'}</span>
+            </button>
+          </div>
+
+          {/* Status badge */}
+          {property.status && (
+            <span
+              className={`detail-page__status-badge ${property.status === 'Active'
+                ? 'detail-page__status-badge--active'
+                : 'detail-page__status-badge--inactive'
+                }`}
+            >
+              {property.status}
+            </span>
+          )}
 
           {/* Address */}
           <p className="detail-page__address" id="property-address">
@@ -196,6 +232,24 @@ function PropertyDetailPage() {
                 <div className="detail-page__openhouse-times">
                   {formatTime(oh.startTime)} — {formatTime(oh.endTime)}
                 </div>
+
+                {/* all_data details grid */}
+                {(() => {
+                  const extraFields = Object.entries(oh).filter(
+                    ([key, value]) => !OPEN_HOUSE_SPECIAL_FIELDS.has(key) && value != null && value !== ''
+                  );
+                  return extraFields.length > 0 && (
+                    <div className="detail-page__openhouse-details-grid">
+                      {extraFields.map(([key, value]) => (
+                        <div className="detail-page__openhouse-detail-item" key={key}>
+                          <span className="detail-page__openhouse-detail-label">{toLabel(key)}</span>
+                          <span className="detail-page__openhouse-detail-value">{String(value)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+
                 {oh.OpenHouseRemarks && (
                   <p className="detail-page__openhouse-remarks">{oh.OpenHouseRemarks}</p>
                 )}

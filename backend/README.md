@@ -12,16 +12,23 @@ backend/
 │   ├── config/
 │   │   └── db.js              # MySQL connection pool (mysql2/promise, 10 connections)
 │   ├── middleware/
-│   │   └── requestLogger.js   # Logs every request: [timestamp] METHOD /url STATUS durationMs
+│   │   └── requestLogger.js   # Logs requests: [timestamp] METHOD /url STATUS durationMs & sets X-Response-Time
 │   └── routes/
 │       ├── health.js          # GET /api/health — database connectivity check
-│       └── properties.js      # GET /api/properties (search + hasOpenHouse),
-│                              # GET /api/properties/:id (configurable columns),
-│                              # GET /api/properties/:id/openhouses (status + validation)
+│       ├── properties.js      # GET /api/properties (search, sort, hasOpenHouse via EXISTS),
+│       │                      # POST /api/properties/favorites (IDs list search),
+│       │                      # GET /api/properties/:id (configurable columns),
+│       │                      # GET /api/properties/:id/openhouses (status + validation)
+│       ├── openhouses.js      # GET /api/openhouses (date range, exact city/state filters, sort, INNER JOIN, pagination)
+│       └── chat.js            # POST /api/chat — OpenRouter LLM proxy endpoint with security prompt
 ├── tests/
 │   ├── health.test.js         # 5 tests — health endpoint
-│   ├── properties.test.js     # 17 tests — listing search, filters, pagination, validation
-│   └── propertyDetail.test.js # 16 tests — property detail, open houses, request logging
+│   ├── properties.test.js     # 33 tests — listing search, filters, sorting, favorites, validation
+│   ├── propertyDetail.test.js # 17 tests — property detail, open houses, request logging
+│   ├── openhouses.test.js     # 24 tests — open house calendar endpoint, date/property filtering, sorting, validation
+│   ├── requestLogger.test.js  # 9 tests — request logging middleware, high-res timing, X-Response-Time
+│   └── query_performance.js  # Performance benchmark & EXPLAIN interpretation suite
+├── OPTIMIZATION_REPORT.md     # Detailed query performance and benchmark report
 ├── .env                       # Environment variables (gitignored)
 ├── .env.example               # Template for .env
 └── package.json
@@ -33,11 +40,11 @@ backend/
 
 ```
 Client request
-  → requestLogger (timestamps + captures response time)
+  → requestLogger (timestamps + high-res duration + X-Response-Time header)
   → cors middleware
   → express.json() (body parser)
-  → Route handler (health / properties)
-  → MySQL query via connection pool
+  → Route handler (health / properties / openhouses / chat)
+  → MySQL query via connection pool (or OpenRouter API for /api/chat)
   → JSON response
 ```
 
@@ -53,9 +60,11 @@ Client request
 
 1. `cors()` — allows cross-origin requests
 2. `express.json()` — parses JSON request bodies
-3. `requestLogger` — logs method, URL, status, and duration for every request
+3. `requestLogger` — logs method, URL, status, duration for every request, and sets `X-Response-Time` header
 4. `/api/health` → `health.js` route
 5. `/api/properties` → `properties.js` route
+6. `/api/openhouses` → `openhouses.js` route
+7. `/api/chat` → `chat.js` route
 
 ### `db.js` — Connection pool
 
@@ -68,11 +77,14 @@ Reads connection details from environment variables: `DB_HOST`, `DB_USER`, `DB_P
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/api/health` | Returns `{ status: "ok" }` if database is reachable, 500 if not |
-| GET | `/api/properties` | Search properties with pagination, filters, and `hasOpenHouse` flag |
+| GET | `/api/properties` | Search properties with pagination, filters, multi-column sort, and `hasOpenHouse` flag |
+| POST | `/api/properties/favorites` | Query favorite properties by display ID array with filters, sort, and pagination |
 | GET | `/api/properties/:id` | Single property detail by `L_DisplayId` (driven by `PROPERTY_DETAIL_COLUMNS`) |
 | GET | `/api/properties/:id/openhouses` | Open house events with status (`active`, `expired`, `upcoming`) |
+| GET | `/api/openhouses` | All open houses with optional `startDate`/`endDate` date range filtering, property filters (`city`, `state`, `zipcode`, `minPrice`, `maxPrice`, `beds`, `baths`), multi-column sorting (`sortBy`/`sortOrder`), INNER JOIN with `rets_property`, pagination up to 500 |
+| POST | `/api/chat` | Conversational AI filter assistant endpoint proxying to OpenRouter (`cohere/north-mini-code:free`) with safety guardrails |
 
-### `GET /api/properties` — Listing search
+### `GET /api/properties` — Listing search & sorting
 
 **Query parameters:**
 
@@ -87,120 +99,61 @@ Reads connection details from environment variables: `DB_HOST`, `DB_USER`, `DB_P
 | `maxPrice` | int | — | ≥ 0 |
 | `beds` | int | — | ≥ 0 |
 | `baths` | number | — | ≥ 0 |
+| `sortBy` | string | — | comma-separated whitelist: `price`, `date`, `sqft`, `beds`, `baths` |
+| `sortOrder` | string | — | comma-separated: `asc` or `desc` |
 
-**Response:**
+### `POST /api/properties/favorites` — Favorites query
+
+**Request Body:**
 ```json
 {
-  "total": 487,
-  "limit": 20,
-  "offset": 0,
-  "results": [
-    {
-      "listingId": 100002222,
-      "propertyId": 100002222,
-      "listPrice": 459900,
-      "address": "123 Main St",
-      "city": "Portland",
-      "state": "OR",
-      "zipCode": "97201",
-      "beds": 3,
-      "baths": 2,
-      "sqft": 1500,
-      "photos": "[\"https://example.com/photo1.jpg\", ...]",
-      "hasOpenHouse": true
-    }
-  ]
+  "ids": ["100002222", "100003333"]
 }
 ```
-
-- `photos` is a raw JSON string from the `L_Photos` database column.
-- `hasOpenHouse` is a boolean flag determined via a LEFT JOIN subquery against active open house events (`OH_StartDate <= OH_EndDate AND OH_EndDate >= CURDATE() AND OH_StartDate <= CURDATE()`).
-
-**Data quality filters** are always applied: rows with NULL/blank city, state, zip, price, beds, or baths are excluded. Rows with invalid zips, negative values, or non-alphabetic city/state are also excluded.
+Queries properties where `p.L_DisplayId IN (...)` combining all search filters, multi-column sorting, and pagination options.
 
 ### `GET /api/properties/:id` — Configurable Property Detail
 
 Returns the property object or 404. Looks up by `L_DisplayId`.
 
-The SELECT clause is built dynamically from the `PROPERTY_DETAIL_COLUMNS` array at the top of `src/routes/properties.js`:
+The SELECT clause is built dynamically from the `PROPERTY_DETAIL_COLUMNS` array at the top of `src/routes/properties.js` including `StandardStatus`.
 
-```javascript
-const PROPERTY_DETAIL_COLUMNS = [
-  { db: 'L_ListingID', alias: 'listingId' },
-  { db: 'L_DisplayId', alias: 'displayId' },
-  { db: 'L_Address', alias: 'address' },
-  { db: 'L_City', alias: 'city' },
-  { db: 'L_State', alias: 'state' },
-  { db: 'L_Zip', alias: 'zipCode' },
-  { db: 'L_SystemPrice', alias: 'listPrice' },
-  { db: 'L_Keyword2', alias: 'beds' },
-  { db: 'LM_Dec_3', alias: 'baths' },
-  { db: 'LM_Int2_3', alias: 'sqft' },
-  { db: 'YearBuilt', alias: 'yearBuilt' },
-  { db: 'L_Remarks', alias: 'description' },
-  { db: 'L_Photos', alias: 'photos' },
-  { db: 'LMD_MP_Latitude', alias: 'latitude' },
-  { db: 'LMD_MP_Longitude', alias: 'longitude' },
-  { db: 'L_Type_', alias: 'propertyType' },
-  { db: 'L_Status', alias: 'status' }
-];
-```
+### `GET /api/openhouses` — Open House Calendar & Search
 
-To add or remove database columns returned by this endpoint, simply edit `PROPERTY_DETAIL_COLUMNS`.
+**Query parameters:**
 
-### `GET /api/properties/:id/openhouses` — Open House Events
+| Param | Type | Default | Validation |
+|-------|------|---------|------------|
+| `limit` | int | 20 | 1–500 |
+| `offset` | int | 0 | ≥ 0 |
+| `startDate` | string | — | YYYY-MM-DD format |
+| `endDate` | string | — | YYYY-MM-DD format, ≥ startDate |
+| `city` | string | — | letters and spaces only |
+| `state` | string | — | letters and spaces only |
+| `zipcode` | string | — | exactly 5 digits |
+| `minPrice` | int | — | ≥ 0 |
+| `maxPrice` | int | — | ≥ 0 |
+| `beds` | int | — | ≥ 0 |
+| `baths` | number | — | ≥ 0 |
+| `sortBy` | string | — | comma-separated whitelist: `price`, `date`, `sqft`, `beds`, `baths` |
+| `sortOrder` | string | — | comma-separated: `asc` or `desc` |
 
-Returns open house events for a property with strict validation rules:
-- Inner joined with `rets_property` on `L_DisplayId` to verify existence in both tables.
-- Filters out invalid date records (`OH_StartDate <= OH_EndDate`).
-- Computes a server-side `status` field:
-  - `"active"`: `OH_StartDate <= today <= OH_EndDate`
-  - `"expired"`: `OH_EndDate < today`
-  - `"upcoming"`: `OH_StartDate > today`
+Uses `INNER JOIN rets_property p ON oh.L_DisplayId = p.L_DisplayId` to ensure results exist in both tables. Enforces `OH_StartDate <= OH_EndDate`. Returns open house data with property context (address, city, state, price, beds, baths, sqft, photos) and computed status (`active`, `expired`, `upcoming`).
 
-**Response Example:**
-```json
-{
-  "listingId": "100002222",
-  "openHouses": [
-    {
-      "listingId": "100002222",
-      "date": "2026-06-15T00:00:00.000Z",
-      "startDate": "2026-06-15T00:00:00.000Z",
-      "endDate": "2026-06-15T00:00:00.000Z",
-      "startTime": "0 days 14:00:00",
-      "endTime": "0 days 17:00:00",
-      "status": "expired",
-      "OpenHouseRemarks": "Refreshments served."
-    }
-  ]
-}
-```
-
-## Setup
+## Setup & Tests
 
 ```bash
 # Install dependencies
 npm install
 
-# Create .env from template
-cp .env.example .env
-# Edit .env with your database credentials
-
 # Start dev server (auto-restarts on file changes)
 npm run dev
 
-# Run tests
+# Run unit and integration tests (Jest + Supertest — 88 tests across 5 suites)
 npm test
+
+# Run query performance & EXPLAIN benchmark suite
+npm run perf
 ```
 
-## Environment Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `DB_HOST` | MySQL host | — |
-| `DB_USER` | MySQL user | — |
-| `DB_PASSWORD` | MySQL password | — |
-| `DB_NAME` | MySQL database name | — |
-| `DB_PORT` | MySQL port | 3306 |
-| `PORT` | Express server port | 5000 |

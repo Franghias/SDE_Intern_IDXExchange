@@ -4,11 +4,19 @@ import '../stylesheets/PropertyCard.css';
 
 /**
  * Property listing card with image carousel, price badge, stats,
- * and optional "Open House" green badge.
+ * optional "Open House" green badge, and favorite heart button.
  * Opens the detail page in a new tab on click.
  */
-function PropertyCard({ property }) {
+function PropertyCard({ property, isFavorite = false, onToggleFavorite }) {
   const detailUrl = `/property/${property.propertyId}`;
+
+  function handleFavoriteClick(e) {
+    e.stopPropagation();
+    e.preventDefault();
+    if (onToggleFavorite) {
+      onToggleFavorite(property.propertyId);
+    }
+  }
 
   return (
     <a
@@ -25,6 +33,16 @@ function PropertyCard({ property }) {
         </span>
         {property.hasOpenHouse && (
           <span className="property-card__openhouse-badge">Open House</span>
+        )}
+        {onToggleFavorite && (
+          <button
+            className={`property-card__favorite-btn${isFavorite ? ' property-card__favorite-btn--active' : ''}`}
+            onClick={handleFavoriteClick}
+            aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+            title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+          >
+            {isFavorite ? '♥' : '♡'}
+          </button>
         )}
       </div>
 
@@ -47,9 +65,22 @@ function PropertyCard({ property }) {
             <strong>{property.sqft?.toLocaleString() ?? '—'}</strong> sqft
           </span>
         </div>
+
+        {property.status && (
+          <span
+            className={`property-card__status-badge ${
+              property.status === 'Active'
+                ? 'property-card__status-badge--active'
+                : 'property-card__status-badge--inactive'
+            }`}
+          >
+            {property.status}
+          </span>
+        )}
       </div>
     </a>
   );
 }
 
 export default PropertyCard;
+

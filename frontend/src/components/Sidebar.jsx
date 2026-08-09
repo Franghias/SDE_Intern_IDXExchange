@@ -1,13 +1,18 @@
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useFavorites } from '../hooks/useFavorites';
 import '../stylesheets/Sidebar.css';
 
 function Sidebar() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { favoriteCount } = useFavorites();
 
   const navItems = [
     { id: 'introduction', label: 'Introduction', icon: '🏠', path: '/' },
     { id: 'search', label: 'Search', icon: '🔍', path: '/search' },
+    { id: 'chat-search', label: 'AI Search', icon: '🤖', path: '/chat-search' },
+    { id: 'favorites', label: 'Favorites', icon: '❤️', path: '/favorites', badge: favoriteCount },
+    { id: 'openhouses', label: 'Open Houses', icon: '📅', path: '/openhouses' },
   ];
 
   /**
@@ -36,7 +41,10 @@ function Sidebar() {
             onClick={() => navigate(item.path)}
           >
             <span className="sidebar__link-icon">{item.icon}</span>
-            {item.label}
+            <span className="sidebar__link-label">{item.label}</span>
+            {item.badge !== undefined && item.badge > 0 && (
+              <span className="sidebar__badge">{item.badge}</span>
+            )}
           </button>
         ))}
       </nav>

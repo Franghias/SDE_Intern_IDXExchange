@@ -1,0 +1,679 @@
+/* ===== Open Houses Page ===== */
+.openhouses-page {
+  padding: 40px 40px 48px;
+}
+
+/* Page header */
+.openhouses-page__header {
+  margin-bottom: 28px;
+}
+
+.openhouses-page__title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--color-text);
+  letter-spacing: -0.02em;
+  margin: 0 0 6px;
+}
+
+.openhouses-page__subtitle {
+  font-size: 0.95rem;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+/* ===== Calendar Section ===== */
+.openhouses-page__calendar-section {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+
+.openhouses-page__calendar-wrapper {
+  position: relative;
+  background: var(--color-surface);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+.openhouses-page__calendar-loading {
+  position: absolute;
+  top: 8px;
+  right: 16px;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.4;
+  }
+}
+
+/* ---- react-big-calendar dark theme overrides ---- */
+.openhouses-page__calendar-wrapper .rbc-calendar {
+  font-family: var(--font-family);
+  color: var(--color-text);
+}
+
+.openhouses-page__calendar-wrapper .rbc-toolbar {
+  margin-bottom: 16px;
+}
+
+.openhouses-page__calendar-wrapper .rbc-toolbar button {
+  color: var(--color-text);
+  background: var(--color-surface-hover);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.openhouses-page__calendar-wrapper .rbc-toolbar button:hover {
+  background: var(--color-primary);
+  color: #fff;
+  border-color: var(--color-primary);
+}
+
+.openhouses-page__calendar-wrapper .rbc-toolbar button.rbc-active {
+  background: var(--color-primary);
+  color: #fff;
+  border-color: var(--color-primary);
+}
+
+.openhouses-page__calendar-wrapper .rbc-toolbar-label {
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: var(--color-text);
+}
+
+.openhouses-page__calendar-wrapper .rbc-header {
+  background: var(--color-surface-hover);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-weight: 600;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 10px 4px;
+}
+
+.openhouses-page__calendar-wrapper .rbc-header+.rbc-header {
+  border-left: 1px solid var(--color-border);
+}
+
+.openhouses-page__calendar-wrapper .rbc-month-view {
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.openhouses-page__calendar-wrapper .rbc-month-row+.rbc-month-row {
+  border-top: 1px solid var(--color-border);
+}
+
+.openhouses-page__calendar-wrapper .rbc-day-bg {
+  background: var(--color-surface);
+  transition: background 0.2s ease;
+}
+
+.openhouses-page__calendar-wrapper .rbc-day-bg:hover {
+  background: var(--color-surface-hover);
+}
+
+.openhouses-page__calendar-wrapper .rbc-day-bg+.rbc-day-bg {
+  border-left: 1px solid var(--color-border);
+}
+
+.openhouses-page__calendar-wrapper .rbc-off-range-bg {
+  background: rgba(15, 15, 19, 0.6);
+}
+
+.openhouses-page__calendar-wrapper .rbc-today {
+  background: rgba(99, 102, 241, 0.08);
+}
+
+.openhouses-page__calendar-wrapper .rbc-date-cell {
+  padding: 4px 8px;
+  text-align: right;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.openhouses-page__calendar-wrapper .rbc-date-cell.rbc-now {
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.openhouses-page__calendar-wrapper .rbc-off-range {
+  color: rgba(136, 136, 160, 0.4);
+}
+
+/* ---- Calendar range selection highlighting ---- */
+
+/* Start/end date endpoints — solid primary tint */
+.openhouses-page__calendar-wrapper .calendar-day--range-endpoint {
+  background: rgba(99, 102, 241, 0.25) !important;
+  border-radius: 0;
+  position: relative;
+}
+
+.openhouses-page__calendar-wrapper .calendar-day--range-endpoint::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-primary);
+}
+
+/* Days between start and end — subtle highlight */
+.openhouses-page__calendar-wrapper .calendar-day--in-range {
+  background: rgba(99, 102, 241, 0.10) !important;
+}
+
+/* Calendar event chips */
+.openhouses-page__calendar-wrapper .rbc-event {
+  background: var(--color-primary);
+  border: none;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  padding: 1px 6px;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.openhouses-page__calendar-wrapper .rbc-event:hover {
+  opacity: 0.85;
+}
+
+.openhouses-page__calendar-wrapper .rbc-event.calendar-event--expired {
+  background: rgba(239, 68, 68, 0.7);
+}
+
+.openhouses-page__calendar-wrapper .rbc-event.calendar-event--upcoming {
+  background: rgba(34, 197, 94, 0.8);
+}
+
+.openhouses-page__calendar-wrapper .rbc-event.calendar-event--active {
+  background: var(--color-primary);
+}
+
+/* Day cells with events — subtle highlight */
+.openhouses-page__calendar-wrapper .calendar-day--has-event {
+  background: rgba(99, 102, 241, 0.05);
+}
+
+.openhouses-page__calendar-wrapper .rbc-show-more {
+  color: var(--color-primary);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* Popup overlay (when clicking "+X more") */
+.openhouses-page__calendar-wrapper .rbc-overlay {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  padding: 12px;
+  z-index: 100;
+}
+
+.openhouses-page__calendar-wrapper .rbc-overlay-header {
+  color: var(--color-text);
+  font-weight: 600;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+}
+
+/* ===== Date Range Filter ===== */
+.openhouses-page__range-filter {
+  background: var(--color-surface);
+  border-radius: 16px;
+  padding: 24px 20px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.openhouses-page__range-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.openhouses-page__range-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.openhouses-page__range-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Chatbot-changed date field highlight */
+.openhouses-page__range-field--changed {
+  animation: filterFieldFlash 1.5s ease;
+}
+
+.openhouses-page__range-field--changed input[type="date"] {
+  border-color: var(--color-primary) !important;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18) !important;
+}
+
+@keyframes filterFieldFlash {
+  0% {
+    background: rgba(99, 102, 241, 0.15);
+    border-radius: 10px;
+  }
+
+  100% {
+    background: transparent;
+  }
+}
+
+.openhouses-page__range-field label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.openhouses-page__range-field input[type="date"] {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  color: var(--color-text);
+  padding: 10px 12px;
+  font-size: 0.9rem;
+  font-family: var(--font-family);
+  transition: border-color 0.2s ease;
+  color-scheme: dark;
+}
+
+.openhouses-page__range-field input[type="date"]:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.openhouses-page__range-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.openhouses-page__range-btn {
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  font-family: var(--font-family);
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+
+.openhouses-page__range-btn:active {
+  transform: scale(0.97);
+}
+
+.openhouses-page__range-btn--apply {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.openhouses-page__range-btn--apply:hover {
+  background: var(--color-primary-hover);
+}
+
+.openhouses-page__range-btn--clear {
+  background: transparent;
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+}
+
+.openhouses-page__range-btn--clear:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+}
+
+/* ===== Active Filter Chip ===== */
+.openhouses-page__active-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  border-radius: 10px;
+  padding: 10px 16px;
+  margin-top: 90px;
+  margin-bottom: 10px;
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+}
+
+.openhouses-page__active-filter strong {
+  color: var(--color-text);
+}
+
+.openhouses-page__clear-chip {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+  transition: color 0.2s ease;
+}
+
+.openhouses-page__clear-chip:hover {
+  color: var(--color-error);
+}
+
+/* ===== Results Count ===== */
+.openhouses-page__count {
+  font-size: 0.95rem;
+  color: var(--color-text-muted);
+  margin: 0 0 24px;
+}
+
+.openhouses-page__count strong {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.openhouses-page__filter-tag {
+  color: var(--color-primary);
+  font-weight: 500;
+}
+
+/* ===== Pagination spacing ===== */
+.openhouses-page #pagination-top {
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+.openhouses-page #pagination-bottom {
+  margin-top: 32px;
+}
+
+/* ===== Open House Card Grid ===== */
+.openhouses-page__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 28px;
+}
+
+@media (max-width: 1200px) {
+  .openhouses-page__grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+
+  .openhouses-page__calendar-section {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .openhouses-page__grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .openhouses-page {
+    padding: 24px 16px 32px;
+  }
+}
+
+/* ===== Open House Card ===== */
+.oh-card {
+  background: var(--color-surface);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  cursor: pointer;
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
+.oh-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+  color: inherit;
+}
+
+/* Image */
+.oh-card__image-wrapper {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: var(--color-skeleton);
+}
+
+/* Price badge */
+.oh-card__price-badge {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  background: var(--color-primary);
+  color: #fff;
+  font-weight: 700;
+  font-size: 1.05rem;
+  padding: 6px 14px;
+  border-radius: 8px;
+  letter-spacing: 0.01em;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  z-index: 2;
+}
+
+/* Status badge */
+.oh-card__status-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 4px 10px;
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  z-index: 2;
+}
+
+.oh-card__status-badge--active {
+  background: rgba(34, 197, 94, 0.9);
+  color: #fff;
+}
+
+.oh-card__status-badge--upcoming {
+  background: rgba(99, 102, 241, 0.9);
+  color: #fff;
+}
+
+.oh-card__status-badge--expired {
+  background: rgba(239, 68, 68, 0.85);
+  color: #fff;
+}
+
+/* Body */
+.oh-card__body {
+  padding: 16px 20px 20px;
+}
+
+.oh-card__address {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.oh-card__location {
+  font-size: 0.88rem;
+  color: var(--color-text-muted);
+  margin: 0 0 12px;
+}
+
+/* Date and time rows */
+.oh-card__date-row,
+.oh-card__time-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.88rem;
+  color: var(--color-text-secondary);
+  margin-bottom: 6px;
+}
+
+.oh-card__date-icon,
+.oh-card__time-icon {
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+.oh-card__date-text {
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+/* Stats row */
+.oh-card__stats {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+}
+
+.oh-card__stat strong {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.oh-card__divider {
+  color: var(--color-border);
+  font-size: 0.75rem;
+}
+
+/* Type tag */
+.oh-card__type-tag {
+  display: inline-block;
+  margin-top: 10px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 3px 10px;
+  border-radius: 6px;
+  background: rgba(99, 102, 241, 0.1);
+  color: var(--color-primary);
+}
+
+/* ===== Loading state ===== */
+.openhouses-page__loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 100px 0;
+  color: var(--color-text-muted);
+  font-size: 1rem;
+}
+
+/* ===== Error state ===== */
+.openhouses-page__error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 100px 24px;
+  text-align: center;
+}
+
+.openhouses-page__error-icon {
+  font-size: 2.5rem;
+  line-height: 1;
+  filter: grayscale(0.3);
+}
+
+.openhouses-page__error h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.openhouses-page__error p {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--color-text-muted);
+  max-width: 400px;
+}
+
+/* ===== Empty / no results state ===== */
+.openhouses-page__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 80px 24px;
+  text-align: center;
+}
+
+.openhouses-page__empty-icon {
+  font-size: 2.5rem;
+  line-height: 1;
+}
+
+.openhouses-page__empty h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.openhouses-page__empty p {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--color-text-muted);
+  max-width: 400px;
+}

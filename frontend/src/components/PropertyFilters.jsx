@@ -14,12 +14,36 @@ const INITIAL_FILTERS = {
   baths: '',
 };
 
-function PropertyFilters({ onSearch, onClear }) {
-  const [filters, setFilters] = useState({ ...INITIAL_FILTERS });
+/**
+ * PropertyFilters — Search filter form for property listings.
+ *
+ * Supports two modes:
+ *   1. Uncontrolled (default): manages its own internal filter state.
+ *   2. Controlled: when `externalFilters` and `onExternalChange` are provided,
+ *      uses the parent's state as the source of truth (e.g. for chatbot integration).
+ *
+ * Props:
+ *   - onSearch          {Function}  Called with cleaned filters when the user clicks Search
+ *   - onClear           {Function}  Called when the user clicks Clear Filters
+ *   - externalFilters   {Object}    (optional) Controlled filter values from parent
+ *   - onExternalChange  {Function}  (optional) Called on every field change in controlled mode
+ *   - changedFields     {string[]}  (optional) List of field names recently changed by chatbot — for highlight animation
+ */
+function PropertyFilters({ onSearch, onClear, externalFilters, onExternalChange, changedFields = [] }) {
+  // Internal state used only when NOT controlled externally
+  const [internalFilters, setInternalFilters] = useState({ ...INITIAL_FILTERS });
+
+  // Determine which state to use
+  const isControlled = externalFilters !== undefined && onExternalChange !== undefined;
+  const filters = isControlled ? externalFilters : internalFilters;
 
   function handleChange(e) {
     const { name, value } = e.target;
-    setFilters((prev) => ({ ...prev, [name]: value }));
+    if (isControlled) {
+      onExternalChange({ ...filters, [name]: value });
+    } else {
+      setInternalFilters((prev) => ({ ...prev, [name]: value }));
+    }
   }
 
   function handleSubmit(e) {
@@ -38,14 +62,25 @@ function PropertyFilters({ onSearch, onClear }) {
   }
 
   function handleClear() {
-    setFilters({ ...INITIAL_FILTERS });
+    if (isControlled) {
+      onExternalChange({ ...INITIAL_FILTERS });
+    } else {
+      setInternalFilters({ ...INITIAL_FILTERS });
+    }
     onClear();
+  }
+
+  /**
+   * Returns extra CSS class if a field was recently changed by the chatbot.
+   */
+  function fieldHighlight(fieldName) {
+    return changedFields.includes(fieldName) ? 'property-filters__field--changed' : '';
   }
 
   return (
     <form className="property-filters" onSubmit={handleSubmit} aria-label="Property filters">
       <div className="property-filters__fields">
-        <div className="property-filters__field">
+        <div className={`property-filters__field ${fieldHighlight('city')}`}>
           <label htmlFor="filter-city">City</label>
           <input
             id="filter-city"
@@ -57,7 +92,7 @@ function PropertyFilters({ onSearch, onClear }) {
           />
         </div>
 
-        <div className="property-filters__field">
+        <div className={`property-filters__field ${fieldHighlight('state')}`}>
           <label htmlFor="filter-state">State</label>
           <input
             id="filter-state"
@@ -69,7 +104,7 @@ function PropertyFilters({ onSearch, onClear }) {
           />
         </div>
 
-        <div className="property-filters__field">
+        <div className={`property-filters__field ${fieldHighlight('zipcode')}`}>
           <label htmlFor="filter-zipcode">ZIP Code</label>
           <input
             id="filter-zipcode"
@@ -81,7 +116,7 @@ function PropertyFilters({ onSearch, onClear }) {
           />
         </div>
 
-        <div className="property-filters__field">
+        <div className={`property-filters__field ${fieldHighlight('minPrice')}`}>
           <label htmlFor="filter-minPrice">Min Price</label>
           <input
             id="filter-minPrice"
@@ -94,7 +129,7 @@ function PropertyFilters({ onSearch, onClear }) {
           />
         </div>
 
-        <div className="property-filters__field">
+        <div className={`property-filters__field ${fieldHighlight('maxPrice')}`}>
           <label htmlFor="filter-maxPrice">Max Price</label>
           <input
             id="filter-maxPrice"
@@ -107,7 +142,7 @@ function PropertyFilters({ onSearch, onClear }) {
           />
         </div>
 
-        <div className="property-filters__field">
+        <div className={`property-filters__field ${fieldHighlight('beds')}`}>
           <label htmlFor="filter-beds">Beds</label>
           <select
             id="filter-beds"
@@ -123,7 +158,7 @@ function PropertyFilters({ onSearch, onClear }) {
           </select>
         </div>
 
-        <div className="property-filters__field">
+        <div className={`property-filters__field ${fieldHighlight('baths')}`}>
           <label htmlFor="filter-baths">Baths</label>
           <select
             id="filter-baths"
@@ -152,4 +187,5 @@ function PropertyFilters({ onSearch, onClear }) {
   );
 }
 
+export { INITIAL_FILTERS };
 export default PropertyFilters;

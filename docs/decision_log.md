@@ -384,3 +384,213 @@
 - Positioned the dynamic "Property Details" grid inside `.detail-page__gallery-col` directly below `<PropertyImageGallery>`
 - Keeps photo column organized with image gallery on top and property specifications below it
 - Preserves responsive two-column desktop and single-column mobile layout without extra DOM wrappers
+
+**Decision: Display `all_data` fields in open house cards as a full-width details grid**
+- The backend already returns selected keys from `rets_openhouse.all_data` via the `OPEN_HOUSE_ALL_DATA_KEYS` whitelist and the `extractAllData()` helper
+- Previously only `OpenHouseRemarks` was rendered on the frontend; the other returned keys (`OffMarketDate`, `AppointmentRequiredYN`, `PropertyType`, `OpenHouseStatus`, `OpenHouseType`, `PropertySubTypeAdditional`, `OpenHouseAttendedBy`, `PropertySubType`, `LivestreamOpenHouseURL`) were silently ignored
+- Now all non-null, non-empty keys from the open house response are rendered in a two-column details grid inside each open house card, below the date/time row
+- Keys already rendered by dedicated UI (`date`, `startTime`, `endTime`, `status`, `listingId`, `startDate`, `endDate`, `OpenHouseRemarks`) are excluded via an `OPEN_HOUSE_SPECIAL_FIELDS` set to avoid duplication
+- The grid uses the same `toLabel()` camelCase-to-readable conversion as the Property Details section
+- Grid is full-width (spans the entire Open Houses section area), consistent with the user's request
+- To add more keys in the future, only the backend's `OPEN_HOUSE_ALL_DATA_KEYS` array needs to be updated — the frontend renders whatever keys the API returns
+- No new dependencies, no new files — follows Ponytail principle of reusing existing patterns
+
+#### 2026-07-28 — Week 9: Advanced Feature (Sorting) + StandardStatus
+
+**Decision: Whitelist-based sort column mapping for security**
+- Created a `SORT_WHITELIST` object mapping API-facing names (e.g., `price`) to actual SQL column names (e.g., `L_SystemPrice`)
+- The warning in TASKS.md explicitly states that using wrong column names silently returns unsorted results
+- Only whitelisted keys are accepted — invalid `sortBy` values return 400
+- Column names are never derived from user input directly; only the whitelist value is injected into SQL
+
+**Decision: Multi-column sorting with comma-separated params**
+- Backend accepts comma-separated `sortBy` and `sortOrder` query params (e.g., `?sortBy=price,date&sortOrder=asc,desc`)
+- Each field/order pair is validated independently against the whitelist
+- If counts don't match between `sortBy` and `sortOrder`, backend returns 400
+- Builds an `ORDER BY` clause with multiple columns (e.g., `ORDER BY p.L_SystemPrice ASC, p.OnMarketDate DESC`)
+
+**Decision: All-fields-visible sort UI with per-field direction dropdowns**
+- All 5 sort fields (Price, Date Listed, Sqft, Beds, Baths) are displayed simultaneously as labeled dropdowns
+- Each dropdown has three options: "—" (no sort), ascending, descending
+- Date Listed uses "Oldest First / Newest First" labels; all others use "Low to High / High to Low"
+- A single "Sort" button applies all selected criteria at once; "Clear" resets all to "—"
+- Sort controls appear once above the top pagination (not duplicated at the bottom)
+- This is simpler than the previous tag-based add-one-at-a-time pattern — users see all options at a glance
+
+**Decision: Use "Oldest First / Newest First" labels for date sort direction**
+- Other columns use "Low to High / High to Low" which is straightforward for numeric values
+- For dates, "Low to High" is ambiguous — "Oldest First" / "Newest First" is immediately intuitive
+- The sort direction options dynamically switch based on the selected field
+
+**Decision: Sort state behavior — persists on page change, resets on filter change**
+- Sort criteria persist when navigating between pages (requirement from TASKS.md)
+- When new filters are applied (`handleSearch`) or cleared (`handleClear`), sort criteria reset to empty
+- This prevents confusing behavior where old sort state applies to a new filter result set
+
+**Decision: Replace `L_Status` with `StandardStatus` column**
+- `PROPERTY_DETAIL_COLUMNS` now maps `StandardStatus` → `status` instead of `L_Status`
+- The listings query also selects `p.StandardStatus AS status` so PropertyCard can display it
+- `status` was added to the `SPECIAL_FIELDS` set in PropertyDetailPage to prevent duplicate rendering (dedicated badge + generic grid)
+
+**Decision: Consistent status badge styling across card and detail page**
+- PropertyCard: status badge floated to bottom-right of the card body
+- PropertyDetailPage: status badge placed between price and address
+- Both use the same color scheme: green background/text for "Active", red for any other status
+- Uses semi-transparent background with colored text (e.g., `rgba(34, 197, 94, 0.12)` + `#16a34a`) for a modern look
+
+#### 2026-07-29 — Week 9: Advanced Feature (Favorites)
+
+**Decision: Encapsulated `useFavorites` hook for localStorage management**
+- Created `useFavorites` custom hook in `frontend/src/hooks/useFavorites.js`
+- Manages favorite property IDs stored as a JSON array under `localStorage` key `'favorites'`
+- All `localStorage` read/write operations are isolated inside the hook — no inline `localStorage` calls in UI components
+- Cross-tab sync implemented via window `storage` event listener so changes in one tab immediately reflect in other open tabs
+
+**Decision: Backend `POST /api/properties/favorites` endpoint for ID-filtered requests**
+- Added `POST /api/properties/favorites` endpoint in `backend/src/routes/properties.js`
+- Used `POST` method instead of `GET` because the list of favorited IDs in the request body may be large
+- Accepts `{ ids: ["100002222", ...] }` and validates each ID using `isValidListingId`
+- Reuses existing property query pipeline (`buildWhereClause`, `hasOpenHouse` subquery JOIN, data quality rules, `validateQueryParams` for limit/offset/filters/sort)
+- Adds `p.L_DisplayId IN (...)` clause to fetch only favorited properties matching active filters
+
+**Decision: Heart toggle button on PropertyCard with event propagation prevention**
+- Added heart toggle button (`.property-card__favorite-btn`) positioned at the top-left of `PropertyCard`
+- Button uses `e.stopPropagation()` and `e.preventDefault()` to prevent card click navigation when favoriting/unfavoriting
+- Heart icon switches between filled (`♥`, red) and outlined (`♡`, white) states based on `isFavorite` prop
+
+**Decision: FavoritesPage layout parity with Search page + instant list shift**
+- `FavoritesPage` shares full feature parity with `ListingsPage` (supports `PropertyFilters`, `SortControls`, `Pagination`, per-page selector)
+- When a user unfavorites a card on the `FavoritesPage`, state immediately filters out that property card (`properties.filter(...)`) so remaining cards instantly shift left in order
+- Header contains a prominent "Remove All" button (`favorites-page__remove-all-btn`) that clears all saved favorites at once
+- Shows empty state ("No favorite properties yet") when no properties are saved or match filters
+
+**Decision: Detail page favorite button integration**
+- Added a "Save" / "Saved" favorite button next to the property price header on `PropertyDetailPage.jsx`
+- Uses `useFavorites` hook to read and toggle favorite status directly from the detail view
+- Displays filled heart (`♥`) and active red background when saved
+
+**Decision: Sidebar navigation link with live count badge**
+- Updated `Sidebar.jsx` with a new "Favorites" nav link (`/favorites`) with heart icon (`❤️`)
+- Renders a live pill badge displaying `favoriteCount` whenever count is > 0
+
+#### 2026-08-05 — Week 10: Conversational AI Chatbot Assistant & Open House Filters/Sorting
+
+**Decision: Backend OpenRouter LLM proxy endpoint (`POST /api/chat`)**
+- Integrated OpenRouter API using model `inclusionai/ling-3.0-flash:free`
+- Configured via environment variables `LLM_API_KEY` and `LLM_MODEL` in `backend/.env` and `backend/.env.example`
+- Endpoints proxied through the Express backend to keep API key hidden from client bundles
+- System prompt strictly enforces security rules: denies off-topic requests, prompt injections, role-play/jailbreak attempts, SQL/code execution, and dangerous/unsafe behaviors
+- LLM outputs structured JSON containing `{ message: string, filters: object }` for automated filter field populating
+
+**Decision: Reusable ChatAssistant component with independent per-page conversation memory**
+- Created `ChatAssistant.jsx` component placed above search filters on `ListingsPage` and `FavoritesPage`, and above the calendar section on `OpenHousesPage`
+- Features a collapsible chat panel with toggle button, message bubbles, typing indicator dots, filter change badge animations, and clear conversation button
+- Each page maintains an independent conversation history state in memory that resets when navigating between pages
+- Chatbot fills in search filter inputs automatically (city, state, zipcode, minPrice, maxPrice, beds, baths, startDate, endDate) without triggering search execution, allowing users to review and click "Search" to finalize
+
+**Decision: Lifted filter state & dual-mode PropertyFilters**
+- Refactored `PropertyFilters.jsx` to support controlled mode via `externalFilters` and `onExternalChange` props
+- Maintained backward compatibility for uncontrolled mode when props are omitted
+- Added `changedFields` prop with animation highlighting (`.property-filters__field--changed`) so users visually see which inputs were auto-filled by the chatbot
+
+**Decision: Extended Open Houses endpoint with Property Filters & Multi-Column Sorting**
+- Enhanced `GET /api/openhouses` route to accept property query parameters (`city`, `state`, `zipcode`, `minPrice`, `maxPrice`, `beds`, `baths`) and `sortBy`/`sortOrder` multi-column sorting parameters
+- Integrated `PropertyFilters` and `SortControls` components directly on `OpenHousesPage` below the calendar section
+- Added `SortControls` below `PropertyFilters` on `FavoritesPage` and `ListingsPage` without requiring `totalPages > 1` so sorting is available even when result sets fit on a single page
+
+#### 2026-08-06 — Week 10: In-Memory Page Cache Optimization & Date Range Math
+
+**Decision: Module-Level In-Memory Caching for Page Views**
+- React Router unmounts page components when changing routes, causing state loss and unnecessary network API calls when users re-visit pages.
+- Created module-level cache variables (`listingsCache`, `favoritesCache`, `openHousesCache`) that survive component unmounting.
+- Page components check their respective cache on mount. If present, state is restored from cache and initial API calls are bypassed.
+- Any explicit user interaction (submitting search filters, clearing filters, changing sort criteria, selecting calendar slots/date ranges, or changing pages/page limits) updates the cache and executes a fresh fetch.
+
+**Decision: Explicit Fetch Pattern for Favorites Page**
+- `FavoritesPage` previously used a reactive `useEffect` watching filter and pagination state, which triggered unexpected fetches on mount.
+- Refactored `FavoritesPage` so `useEffect` only watches the `favorites` array (to detect additions/removals made on other pages).
+- All UI actions (search, clear, sort, pagination) explicitly trigger `loadFavoriteProperties` and update `favoritesCache`.
+
+**Decision: Calendar Month Boundary Calculation via Day 0**
+- In `OpenHousesPage.jsx`, calendar events for the current month are fetched using `new Date(year, month + 1, 0)`.
+- Passing day `0` to JavaScript's `Date` constructor evaluates to the final day of month N (e.g. `2026-08-31` for August), accurately capturing all events in the month without bleeding into the next month.
+
+#### 2026-08-06 — Week 10: Chatbot Prompt Hardening & Non-Disruptive Scroll UX
+
+**Decision: Strict System Prompt Enforcement & JSON Mode in OpenRouter Payload (`chat.js`)**
+- Added explicit negative prompt constraints in `buildSystemPrompt()` prohibiting plain text preambles, markdown code fences, XML tags, and `<tool_call>` blocks.
+- Included concrete multi-field JSON output example (`minPrice` and `maxPrice` set simultaneously).
+- Passed `response_format: { type: 'json_object' }` and lowered `temperature` to `0.1` in the OpenRouter API request payload to enforce valid JSON generation at the model level.
+
+**Decision: Non-Disruptive Internal Chat Scroll (`ChatAssistant.jsx`)**
+- Replaced page-level `messagesEndRef.current.scrollIntoView()` with container-level `messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight`.
+- Ensures auto-scrolling is restricted to the internal chat panel message log without causing the main browser page/window to scroll or jump down to filter sections when the chatbot outputs responses.
+
+#### 2026-08-06 — Week 10: Dedicated AI Chatbot Search Page (`/chat-search`)
+
+**Decision: Dedicated Conversational AI Search Page without Manual Filter or Sort Controls**
+- Created `ChatSearchPage.jsx` component routed at `/chat-search` with sidebar navigation link "AI Search" (icon: 🤖).
+- Dedicated page renders `ChatAssistant` (expanded by default) without `PropertyFilters` or `SortControls` manual form inputs.
+- When `ChatAssistant` receives filter updates from the LLM, `ChatSearchPage` immediately executes `fetchProperties(filters)` without requiring manual user search button clicks.
+- Implemented module-level caching (`chatSearchCache`) to preserve conversation and active property grid state across navigation cycles.
+- Added comprehensive unit tests in `ChatSearchPage.test.jsx` verifying automatic API execution, component rendering, loading, error, and empty states.
+
+**Decision: Conversational Sorting Field & Ordering Capabilities (`chat.js` & `ChatAssistant.jsx`)**
+- Expanded system prompt in `chat.js` to instruct the LLM on sorting capabilities for `price`, `date` (Date Listed), `sqft`, `beds`, and `baths`.
+- Defined clear ordering direction rules for the LLM: `asc` (Low to High / Oldest First) and `desc` (High to Low / Newest First).
+- Updated `isKnownFilter` and `formatFieldName` in `ChatAssistant.jsx` to recognize `sortBy` and `sortOrder` filter keys and render visual highlight badges when sorting is auto-applied by the chatbot.
+
+#### 2026-08-09 — Week 10: Dynamic Timezone Date Formatting & Conversational Filter Guards
+
+**Decision: Local Midnight Construction for `YYYY-MM-DD` Date Strings (`format.js`)**
+- JavaScript's standard `new Date("YYYY-MM-DD")` constructor parses date-only strings as UTC midnight (`00:00:00Z`). In timezones behind UTC (such as US Central UTC-5 or Eastern UTC-4), `toLocaleDateString()` converted UTC midnight to the previous evening (e.g. July 31st for August 1st).
+- Updated `formatDate` to split `YYYY-MM-DD` and instantiate `new Date(year, month - 1, day)`, constructing the Date object at local midnight in the user's browser timezone.
+- Using `toLocaleDateString(locale || undefined, ...)` dynamically formats dates matching the user's selected range across any global timezone.
+
+**Decision: Conversational Filter Response Guard & Strict LLM Prompt Instruction (`chat.js`, `ChatAssistant.jsx`, `ChatSearchPage.jsx`)**
+- Updated system prompt in `chat.js` to instruct the LLM to return `"filters": {}` when user sends conversational messages (e.g. "thank you", "thanks", "hello", "hi") and prohibit echoing unchanged filters.
+- Added strict value-difference checking in `ChatAssistant.jsx` and `ChatSearchPage.jsx` using `new Set([...Object.keys(newFilters), ...Object.keys(activeFilters)])` so `onFiltersChange` and backend property re-fetches execute ONLY when filter values actually change.
+- Ensures new filter requests (e.g. price change from $450k to $550k) execute immediately, while conversational follow-ups do not trigger redundant API queries.
+
+#### 2026-08-09 — Week 9: Part B — Database Query Performance Optimization & EXPLAIN Analysis
+
+**Decision: Sargable Column Equality vs Functional `LOWER()` in SQL (`properties.js`)**
+- Wrapping `L_City` or `L_State` in `LOWER()` inside the SQL WHERE clause (`LOWER(L_City) = LOWER(?)`) broke B-Tree index accessibility, forcing MySQL into an index range scan on `L_SystemPrice` and memory evaluation of ~21,000 rows (taking ~5.7 seconds).
+- Normalizing user input in JavaScript (`toTitleCase()`) combined with MySQL 8's case-insensitive default collation (`utf8mb4_0900_ai_ci`) allows direct SQL equality (`L_City = ?`), enabling instant index traversal on `idx_city` (~3.2 ms latency, >1,700x speedup).
+
+**Decision: Correlated `EXISTS` Subquery over Derived Table `LEFT JOIN (GROUP BY)` (`properties.js`)**
+- Previously, `GET /api/properties` and `POST /api/properties/favorites` executed an inline derived table that aggregated all 4,282 rows of `rets_openhouse` using `GROUP BY L_DisplayId` into an internal temporary table (`Using temporary`) on every request.
+- Replaced with `EXISTS (SELECT 1 FROM rets_openhouse WHERE oh.L_DisplayId = p.L_DisplayId AND ...)` which executes lightweight index lookups on `idx_L_DisplayId` solely for the 20 paginated results, completely eliminating temporary table materialization.
+
+**Decision: Targeted Data Quality Constraints to Avoid Redundant SQL Regex Overhead (`properties.js`)**
+- Express route validation already validates incoming filter formats (e.g., `city` matches `^[A-Za-z\s]+$`).
+- Refactored `buildWhereClause()` so that when a specific filter is provided, redundant SQL regex checks on that column are skipped while maintaining data quality constraints when filters are absent.
+
+**Decision: Exact Indexed Matching on Open Houses City Filter (`openhouses.js`)**
+- Replaced `p.L_City LIKE '%...%'` with normalized exact equality `p.L_City = ?` and `p.L_State = ?`.
+- Allows MySQL's query optimizer to use `idx_city` or composite indexes on `rets_property` during join resolution, dropping open house search latency from ~1,133 ms down to ~2.2 ms.
+
+**Decision: Composite Indexes for Common Filter + Sort Combinations (`03_add_indexes.sql`)**
+- Added `idx_city_price (L_City, L_SystemPrice)` on `rets_property` to eliminate filesort passes for city searches ordered by price.
+- Added `idx_date_startTime_displayId (OpenHouseDate, OH_StartTime, L_DisplayId)` on `rets_openhouse` to support date range index scanning, date/time ordered retrieval, and property display ID joining in a single index structure.
+
+#### 2026-08-09 — Request Logging Middleware Enhancement & React Error Boundary
+
+**Decision: High-Precision Nanosecond Timing via `process.hrtime.bigint()` & `X-Response-Time` HTTP Header (`requestLogger.js`)**
+- `Date.now()` is subject to clock drift and has millisecond precision that may round fast sub-millisecond responses to 0ms.
+- Upgraded duration tracking in `requestLogger.js` to `process.hrtime.bigint()` for nanosecond precision converted to integer milliseconds.
+- Attached `X-Response-Time: <ms>ms` response header using a wrapper around `res.writeHead`, ensuring clients and debugging proxies can inspect response duration directly without checking server logs.
+
+**Decision: Lifecycle Listener Deduplication Guard on `finish` and `close` (`requestLogger.js`)**
+- Express requests can finish normally (`finish` event) or abort prematurely due to client disconnections or socket resets (`close` event).
+- Attached listeners to both `finish` and `close` with a `logged` boolean guard flag.
+- Guarantees every completed or aborted request is timed and logged exactly once without duplicate terminal output.
+
+**Decision: React 19 Class-Based `ErrorBoundary` with Actionable Recovery UI & Diagnostics (`ErrorBoundary.jsx`)**
+- React functional components cannot catch rendering errors (React still requires class components with `static getDerivedStateFromError` and `componentDidCatch`).
+- Built `<ErrorBoundary>` providing an actionable recovery card with three user choices: "Try Again" (`resetErrorBoundary`), "Reload Page" (`window.location.reload()`), and "Return to Home" (`/`).
+- Included collapsible technical stack trace details for development debugging while keeping the primary UI clean, user-friendly, and styled according to design tokens (`ErrorBoundary.css`).
+
+**Decision: Main Content Canvas Placement for `ErrorBoundary` in `App.jsx`**
+- In `App.jsx`, placed `<ErrorBoundary>` inside `<main className="app-content">` wrapping `<Routes>`.
+- Preserves the fixed `<Sidebar>` navigation bar even if an uncaught render error occurs on a specific route view, allowing users to safely navigate back to other views (e.g. from a failing Property Detail back to Search).

@@ -276,3 +276,229 @@ describe('Week 3 — GET /api/properties', () => {
     expect(res.body.message).toBe('Failed to fetch properties');
   });
 });
+
+// =============================================================
+// Week 9 — Sorting & StandardStatus
+// =============================================================
+
+describe('Week 9 — Sorting', () => {
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  test('sortBy=price&sortOrder=asc returns 200 and SQL contains ORDER BY', async () => {
+    mockDbQueries(5, [
+      { listingId: 'ID1', listPrice: 100000, status: 'Active' },
+      { listingId: 'ID2', listPrice: 200000, status: 'Active' },
+    ]);
+
+    const res = await request(app).get('/api/properties?sortBy=price&sortOrder=asc');
+
+    expect(res.status).toBe(200);
+
+    // Verify ORDER BY is in the data query SQL
+    const dataSQL = pool.query.mock.calls[1][0];
+    expect(dataSQL).toContain('ORDER BY');
+    expect(dataSQL).toContain('L_SystemPrice');
+    expect(dataSQL).toContain('ASC');
+  });
+
+  test('sortBy=price&sortOrder=desc returns 200 with DESC ordering', async () => {
+    mockDbQueries(5, [
+      { listingId: 'ID1', listPrice: 500000, status: 'Active' },
+      { listingId: 'ID2', listPrice: 200000, status: 'Active' },
+    ]);
+
+    const res = await request(app).get('/api/properties?sortBy=price&sortOrder=desc');
+
+    expect(res.status).toBe(200);
+
+    const dataSQL = pool.query.mock.calls[1][0];
+    expect(dataSQL).toContain('ORDER BY');
+    expect(dataSQL).toContain('DESC');
+  });
+
+  test('returns 400 for invalid sortBy value', async () => {
+    const res = await request(app).get('/api/properties?sortBy=invalidField');
+
+    expect(res.status).toBe(400);
+    expect(res.body.errors).toBeDefined();
+    expect(res.body.errors[0]).toContain('sortBy must be one of');
+  });
+
+  test('returns 400 for invalid sortOrder value', async () => {
+    const res = await request(app).get('/api/properties?sortBy=price&sortOrder=random');
+
+    expect(res.status).toBe(400);
+    expect(res.body.errors).toBeDefined();
+    expect(res.body.errors[0]).toContain('sortOrder must be asc or desc');
+  });
+
+  test('sortBy without sortOrder defaults to ascending', async () => {
+    mockDbQueries(5, [{ listingId: 'ID1', listPrice: 100000, status: 'Active' }]);
+
+    const res = await request(app).get('/api/properties?sortBy=price');
+
+    expect(res.status).toBe(200);
+
+    const dataSQL = pool.query.mock.calls[1][0];
+    expect(dataSQL).toContain('ORDER BY');
+    expect(dataSQL).toContain('ASC');
+  });
+
+  test('sorting works combined with filters', async () => {
+    mockDbQueries(3, [
+      { listingId: 'ID1', city: 'Portland', listPrice: 150000, status: 'Active' },
+    ]);
+
+    const res = await request(app).get(
+      '/api/properties?city=Portland&sortBy=price&sortOrder=desc'
+    );
+
+    expect(res.status).toBe(200);
+
+    // Verify filter params are present
+    const countParams = pool.query.mock.calls[0][1];
+    expect(countParams).toContain('Portland');
+
+    // Verify ORDER BY is in data query
+    const dataSQL = pool.query.mock.calls[1][0];
+    expect(dataSQL).toContain('ORDER BY');
+    expect(dataSQL).toContain('DESC');
+  });
+
+  test('no ORDER BY when sortBy is not provided', async () => {
+    mockDbQueries(5, [{ listingId: 'ID1', listPrice: 100000, status: 'Active' }]);
+
+    const res = await request(app).get('/api/properties');
+
+    expect(res.status).toBe(200);
+
+    const dataSQL = pool.query.mock.calls[1][0];
+    expect(dataSQL).not.toContain('ORDER BY');
+  });
+
+  test('sortBy=date uses OnMarketDate column', async () => {
+    mockDbQueries(5, [{ listingId: 'ID1', status: 'Active' }]);
+
+    const res = await request(app).get('/api/properties?sortBy=date&sortOrder=desc');
+
+    expect(res.status).toBe(200);
+
+    const dataSQL = pool.query.mock.calls[1][0];
+    expect(dataSQL).toContain('OnMarketDate');
+  });
+
+  test('multi-column sort: sortBy=price,date&sortOrder=asc,desc produces correct ORDER BY', async () => {
+    mockDbQueries(5, [{ listingId: 'ID1', status: 'Active' }]);
+
+    const res = await request(app).get('/api/properties?sortBy=price,date&sortOrder=asc,desc');
+
+    expect(res.status).toBe(200);
+
+    const dataSQL = pool.query.mock.calls[1][0];
+    expect(dataSQL).toContain('ORDER BY');
+    expect(dataSQL).toContain('L_SystemPrice');
+    expect(dataSQL).toContain('OnMarketDate');
+    expect(dataSQL).toContain('ASC');
+    expect(dataSQL).toContain('DESC');
+  });
+
+  test('returns 400 when sortBy and sortOrder have mismatched counts', async () => {
+    const res = await request(app).get('/api/properties?sortBy=price,date&sortOrder=asc');
+
+    expect(res.status).toBe(400);
+    expect(res.body.errors).toBeDefined();
+    expect(res.body.errors[0]).toContain('same number of values');
+  });
+});
+
+describe('Week 9 — StandardStatus', () => {
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  test('listing results include status field from StandardStatus column', async () => {
+    mockDbQueries(1, [
+      { listingId: 'ID1', listPrice: 300000, status: 'Active', hasOpenHouse: 0 },
+    ]);
+
+    const res = await request(app).get('/api/properties');
+
+    expect(res.status).toBe(200);
+
+    // Verify the SELECT query references StandardStatus
+    const dataSQL = pool.query.mock.calls[1][0];
+    expect(dataSQL).toContain('StandardStatus');
+  });
+});
+
+describe('Week 9 — Favorites Endpoint (POST /api/properties/favorites)', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  test('returns 400 if ids is missing, not an array, or empty', async () => {
+    const res1 = await request(app).post('/api/properties/favorites').send({});
+    expect(res1.status).toBe(400);
+    expect(res1.body.message).toContain('non-empty array');
+
+    const res2 = await request(app).post('/api/properties/favorites').send({ ids: '123' });
+    expect(res2.status).toBe(400);
+    expect(res2.body.message).toContain('non-empty array');
+
+    const res3 = await request(app).post('/api/properties/favorites').send({ ids: [] });
+    expect(res3.status).toBe(400);
+    expect(res3.body.message).toContain('non-empty array');
+  });
+
+  test('returns 400 if any ID is invalid', async () => {
+    const res = await request(app)
+      .post('/api/properties/favorites')
+      .send({ ids: ['100002222', 'invalid-id!'] });
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toContain('Invalid property ID');
+  });
+
+  test('returns matching favorite properties', async () => {
+    const mockResults = [
+      { listingId: '100', propertyId: '100002222', listPrice: 450000, hasOpenHouse: 1 },
+      { listingId: '101', propertyId: '100003333', listPrice: 550000, hasOpenHouse: 0 },
+    ];
+    mockDbQueries(2, mockResults);
+
+    const res = await request(app)
+      .post('/api/properties/favorites')
+      .send({ ids: ['100002222', '100003333'] });
+
+    expect(res.status).toBe(200);
+    expect(res.body.total).toBe(2);
+    expect(res.body.results.length).toBe(2);
+    expect(res.body.results[0].hasOpenHouse).toBe(true);
+    expect(res.body.results[1].hasOpenHouse).toBe(false);
+  });
+
+  test('supports filtering, sorting, and pagination on favorites', async () => {
+    mockDbQueries(1, [{ listingId: '100', propertyId: '100002222', listPrice: 450000, hasOpenHouse: 0 }]);
+
+    const res = await request(app)
+      .post('/api/properties/favorites?city=Portland&sortBy=price&sortOrder=desc&limit=10&offset=0')
+      .send({ ids: ['100002222'] });
+
+    expect(res.status).toBe(200);
+    expect(res.body.limit).toBe(10);
+    expect(res.body.offset).toBe(0);
+
+    const countSQL = pool.query.mock.calls[0][0];
+    expect(countSQL).toContain('IN (?)');
+    expect(countSQL).toContain('L_City');
+
+    const dataSQL = pool.query.mock.calls[1][0];
+    expect(dataSQL).toContain('ORDER BY');
+    expect(dataSQL).toContain('L_SystemPrice DESC');
+  });
+});
+

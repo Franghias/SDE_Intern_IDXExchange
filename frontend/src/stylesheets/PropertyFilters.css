@@ -7,6 +7,22 @@
   margin-bottom: 28px;
 }
 
+/* Chatbot-changed field highlight */
+.property-filters__field--changed {
+  animation: filterFieldFlash 1.5s ease;
+}
+
+.property-filters__field--changed input,
+.property-filters__field--changed select {
+  border-color: var(--color-primary) !important;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18) !important;
+}
+
+@keyframes filterFieldFlash {
+  0% { background: rgba(99, 102, 241, 0.15); border-radius: 10px; }
+  100% { background: transparent; }
+}
+
 /* Fields grid */
 .property-filters__fields {
   display: grid;

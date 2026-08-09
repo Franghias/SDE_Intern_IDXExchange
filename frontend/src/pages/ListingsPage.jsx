@@ -1,31 +1,64 @@
 import { useState, useEffect, useCallback } from 'react';
 import { fetchProperties } from '../api/propertyApi';
-import PropertyFilters from '../components/PropertyFilters';
+import { useFavorites } from '../hooks/useFavorites';
+import ChatAssistant from '../components/ChatAssistant';
+import PropertyFilters, { INITIAL_FILTERS } from '../components/PropertyFilters';
 import PropertyCard from '../components/PropertyCard';
 import Pagination from '../components/Pagination';
+import SortControls from '../components/SortControls';
 import '../stylesheets/ListingsPage.css';
 
 const PAGE_SIZE_OPTIONS = [10, 20, 30, 40, 50];
 
+/**
+ * Module-level cache: persists across component mount/unmount cycles so that
+ * navigating away and back does NOT re-fetch data from the server.
+ * The cache is updated every time a fresh fetch occurs (search, sort, pagination, etc.).
+ */
+let listingsCache = null;
+
 function ListingsPage() {
-  const [properties, setProperties] = useState([]);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [properties, setProperties] = useState(listingsCache?.properties ?? []);
+  const [total, setTotal] = useState(listingsCache?.total ?? 0);
+  const [loading, setLoading] = useState(!listingsCache);
   const [error, setError] = useState(null);
-  const [activeFilters, setActiveFilters] = useState({});
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(20);
+  const [activeFilters, setActiveFilters] = useState(listingsCache?.activeFilters ?? {});
+  const [currentPage, setCurrentPage] = useState(listingsCache?.currentPage ?? 1);
+  const [itemsPerPage, setItemsPerPage] = useState(listingsCache?.itemsPerPage ?? 20);
+  const [sortCriteria, setSortCriteria] = useState(listingsCache?.sortCriteria ?? []);
+
+  // Lifted filter state for chatbot ↔ PropertyFilters sync
+  const [filterFormValues, setFilterFormValues] = useState(listingsCache?.filterFormValues ?? { ...INITIAL_FILTERS });
+  const [changedFields, setChangedFields] = useState([]);
+
+  const { isFavorite, toggleFavorite } = useFavorites();
 
   const totalPages = Math.ceil(total / itemsPerPage);
 
-  const loadProperties = useCallback(async (filters = {}, page = 1, limit = 20) => {
+  const loadProperties = useCallback(async (filters = {}, page = 1, limit = 20, criteria = []) => {
     setLoading(true);
     setError(null);
     try {
       const offset = (page - 1) * limit;
-      const data = await fetchProperties({ limit, offset, ...filters });
+      const data = await fetchProperties({
+        limit,
+        offset,
+        ...filters,
+        sortCriteria: criteria.length > 0 ? criteria : undefined,
+      });
       setProperties(data.results);
       setTotal(data.total);
+
+      // Update module-level cache with fresh data
+      listingsCache = {
+        ...listingsCache,
+        properties: data.results,
+        total: data.total,
+        activeFilters: filters,
+        currentPage: page,
+        itemsPerPage: limit,
+        sortCriteria: criteria,
+      };
     } catch (err) {
       setError(err.message);
     } finally {
@@ -33,40 +66,70 @@ function ListingsPage() {
     }
   }, []);
 
-  // Initial load
-  // useEffect(() => {
-  //   loadProperties({}, 1, itemsPerPage);
-  // }, [loadProperties, itemsPerPage]);
-
-  // Only loads once on the first render, not on subsequent renders. 
-  // This is due to the empty dependency array [].
+  // On mount: only fetch if there is no cached data (first visit).
+  // Subsequent visits restore from the module-level cache instead.
   useEffect(() => {
-    loadProperties({}, 1, itemsPerPage);
+    if (!listingsCache) {
+      loadProperties({}, 1, itemsPerPage, sortCriteria);
+    }
   }, []);
 
   function handleSearch(filters) {
     setActiveFilters(filters);
     setCurrentPage(1);
-    loadProperties(filters, 1, itemsPerPage);
+    setSortCriteria([]);
+    if (listingsCache) listingsCache.filterFormValues = filterFormValues;
+    loadProperties(filters, 1, itemsPerPage, []);
   }
 
   function handleClear() {
     setActiveFilters({});
+    setFilterFormValues({ ...INITIAL_FILTERS });
     setCurrentPage(1);
-    loadProperties({}, 1, itemsPerPage);
+    setSortCriteria([]);
+    if (listingsCache) listingsCache.filterFormValues = { ...INITIAL_FILTERS };
+    loadProperties({}, 1, itemsPerPage, []);
   }
 
   function handlePageChange(page) {
     setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    loadProperties(activeFilters, page, itemsPerPage);
+    loadProperties(activeFilters, page, itemsPerPage, sortCriteria);
   }
 
   function handleItemsPerPageChange(e) {
     const newLimit = Number(e.target.value);
     setItemsPerPage(newLimit);
     setCurrentPage(1);
-    loadProperties(activeFilters, 1, newLimit);
+    loadProperties(activeFilters, 1, newLimit, sortCriteria);
+  }
+
+  function handleSortChange(newCriteria) {
+    setSortCriteria(newCriteria);
+    setCurrentPage(1);
+    loadProperties(activeFilters, 1, itemsPerPage, newCriteria);
+  }
+
+  /**
+   * Called by ChatAssistant when the LLM suggests new filter values.
+   * Updates the form fields visually without triggering a search.
+   */
+  function handleChatFiltersChange(newFilters) {
+    // Track which fields changed for highlight animation
+    const changed = [];
+    for (const key of Object.keys(newFilters)) {
+      if (newFilters[key] !== filterFormValues[key]) {
+        changed.push(key);
+      }
+    }
+    setChangedFields(changed);
+    setFilterFormValues(newFilters);
+    if (listingsCache) listingsCache.filterFormValues = newFilters;
+
+    // Clear highlights after delay
+    if (changed.length > 0) {
+      setTimeout(() => setChangedFields([]), 2500);
+    }
   }
 
   // Compute the "Showing X–Y of Z" range
@@ -82,9 +145,29 @@ function ListingsPage() {
         </p>
       </div>
 
-      <PropertyFilters onSearch={handleSearch} onClear={handleClear} />
+      <ChatAssistant
+        filters={filterFormValues}
+        onFiltersChange={handleChatFiltersChange}
+        pageContext="listings"
+      />
 
-      {/* Top pagination — below filters, above grid */}
+      <PropertyFilters
+        onSearch={handleSearch}
+        onClear={handleClear}
+        externalFilters={filterFormValues}
+        onExternalChange={setFilterFormValues}
+        changedFields={changedFields}
+      />
+
+      {/* Sort controls — below filters */}
+      {!loading && !error && (
+        <SortControls
+          sortCriteria={sortCriteria}
+          onChange={handleSortChange}
+        />
+      )}
+
+      {/* Top pagination — below sort, above grid */}
       {!loading && !error && totalPages > 1 && (
         <div className="pagination-controls" id="pagination-top">
           <Pagination
@@ -146,7 +229,12 @@ function ListingsPage() {
           ) : (
             <div className="listings-page__grid" id="property-grid">
               {properties.map((property) => (
-                <PropertyCard key={property.listingId} property={property} />
+                <PropertyCard
+                  key={property.listingId}
+                  property={property}
+                  isFavorite={isFavorite(property.propertyId)}
+                  onToggleFavorite={toggleFavorite}
+                />
               ))}
             </div>
           )}

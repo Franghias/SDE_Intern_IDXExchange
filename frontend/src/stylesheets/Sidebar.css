@@ -84,6 +84,25 @@
   text-align: center;
 }
 
+.sidebar__link-label {
+  flex: 1;
+}
+
+.sidebar__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
 /* Mobile: hide sidebar and show top bar (future enhancement) */
 @media (max-width: 768px) {
   .sidebar {

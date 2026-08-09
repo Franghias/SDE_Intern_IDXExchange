@@ -14,25 +14,44 @@ Here is how the React components are nested and routed:
 ```mermaid
 graph TD
     App[App.jsx - BrowserRouter] --> Sidebar[Sidebar.jsx]
-    App --> MainContent["main.app-content (Routes)"]
-    MainContent -->|Route /| IntroPage[IntroductionPage.jsx]
-    MainContent -->|Route /search| ListingsPage[ListingsPage.jsx]
-    MainContent -->|Route /property/:id| DetailPage[PropertyDetailPage.jsx]
+    App --> MainContent["main.app-content"]
+    MainContent --> ErrorBoundary[ErrorBoundary.jsx]
+    ErrorBoundary --> Routes[Routes]
+    Routes -->|Route /| IntroPage[IntroductionPage.jsx]
+    Routes -->|Route /search| ListingsPage[ListingsPage.jsx]
+    Routes -->|Route /chat-search| ChatSearchPage[ChatSearchPage.jsx]
+    Routes -->|Route /favorites| FavoritesPage[FavoritesPage.jsx]
+    Routes -->|Route /openhouses| OpenHousesPage[OpenHousesPage.jsx]
+    Routes -->|Route /property/:id| DetailPage[PropertyDetailPage.jsx]
     
+    ChatSearchPage --> ChatAssistantOpen["ChatAssistant.jsx (open by default)"]
+    ChatSearchPage --> DirectApiFetch["Direct API Execution on Chat Filter Update"]
+    ChatSearchPage --> ChatGrid["Property Card Grid"]
+
     ListingsPage --> PropertyFilters[PropertyFilters.jsx]
+    ListingsPage --> SortControls[SortControls.jsx]
     ListingsPage --> PaginationTop["Pagination.jsx (Top)"]
     ListingsPage --> PropertyCardGrid["Property Grid"]
     ListingsPage --> PaginationBottom["Pagination.jsx (Bottom)"]
     
+    FavoritesPage --> RemoveAllBtn["Remove All Button (Header)"]
+    FavoritesPage --> FavFilters[PropertyFilters.jsx]
+    FavoritesPage --> FavSort[SortControls.jsx]
+    FavoritesPage --> FavGrid["Property Grid (Instant Shift)"]
+    
     PropertyCardGrid --> PropertyCard["PropertyCard.jsx (many - target='_blank')"]
+    FavGrid --> PropertyCard
     PropertyCard --> Carousel[PropertyImageCarousel.jsx]
     PropertyCard --> OpenHouseBadge["Open House Badge (Green)"]
+    PropertyCard --> StatusBadge["Status Badge (Active/Pending)"]
+    PropertyCard --> HeartBtn["Favorite Heart Button (♡ / ♥)"]
 
     DetailPage --> GalleryCol["Left Column (.detail-page__gallery-col)"]
     DetailPage --> InfoCol["Right Column (.detail-page__info-col)"]
     DetailPage --> PropertyMap[PropertyMap.jsx]
     DetailPage --> OpenHousesSection["Open Houses List"]
 
+    InfoCol --> SaveBtn["Save / Saved Favorite Button"]
     GalleryCol --> Gallery[PropertyImageGallery.jsx]
     GalleryCol --> PropertyDetails["Property Details (Dynamic Grid)"]
 ```
@@ -48,136 +67,195 @@ The parent container `.app-layout` is a CSS Grid with two columns: `260px` and `
 - `<main className="app-content">` is placed into the **second grid column** with `grid-column: 2;`.
 - The content canvas spans the remaining width and scrolls vertically independently.
 
-```mermaid
-grid
-┌──────────────────────────────────────┐
-│ .app-layout                          │
-│ ┌──────────────┬───────────────────┐ │
-│ │ Column 1     │ Column 2          │ │
-│ │ (260px)      │ (1fr)             │ │
-│ ├──────────────┼───────────────────┤ │
-│ │ [Sidebar]    │ [app-content]     │ │
-│ │ (Fixed,      │                   │ │
-│ │  Overlays    │ (grid-column: 2)  │ │
-│ │  Column 1)   │                   │ │
-│ └──────────────┴───────────────────┘ │
-└──────────────────────────────────────┘
-```
+---
 
-### Mobile View
-On screen widths of `768px` or less:
-- `.sidebar` becomes `position: relative` (in-flow horizontal header bar).
-- Grid layout switches to `grid-template-columns: 1fr;`.
-- `.app-content` occupies `grid-column: 1;`.
+## 3. Client-Side Routing & Navigation Flow
+
+Page navigation is managed using `react-router-dom` (`BrowserRouter`, `Routes`, `Route`).
+
+Routes:
+- `/` — **Introduction Landing Page**
+- `/search` — **Property Search Page** (filters + multi-column sort + grid + pagination)
+- `/favorites` — **Favorites View** (saved properties + Remove All + filters + sort + pagination + instant card removal)
+- `/property/:id` — **Property Detail Page** (opens in a **new tab** on card click)
 
 ---
 
-## 3. Client-Side Routing & Multi-Tab Detail Navigation
+## 4. Comprehensive End-to-End Data Flows
 
-Page navigation is managed using `react-router-dom` (`BrowserRouter`, `Routes`, `Route`).
+### Flow A: Health Check Endpoint (`GET /api/health`)
+
+```mermaid
+sequenceDiagram
+    participant Client as Frontend / Browser / Healthcheck
+    participant Express as Express App (app.js)
+    participant Route as health.js Route
+    participant DB as MySQL Pool (db.js)
+
+    Client->>Express: GET /api/health
+    Express->>Route: Route to /api/health handler
+    Route->>DB: pool.query("SELECT 1")
+    alt Database connected
+        DB-->>Route: Return query result
+        Route-->>Client: 200 OK { status: "ok", database: "connected" }
+    else Database disconnected
+        DB-->>Route: Throw error
+        Route-->>Client: 500 Internal Server Error { status: "error", database: "disconnected" }
+    end
+```
+
+---
+
+### Flow B: Property Search, Filtering, Multi-Column Sort & Pagination (`GET /api/properties`)
+
+> **Note on In-Memory Caching**: `ListingsPage`, `FavoritesPage`, and `OpenHousesPage` utilize module-level caches (`listingsCache`, `favoritesCache`, `openHousesCache`). When navigating between routes via React Router, mounted pages initialize state from cache and skip API re-fetching unless search filters, sort controls, date ranges, or pagination are explicitly modified by the user.
 
 ```mermaid
 sequenceDiagram
     participant User
-    participant App as App.jsx (BrowserRouter)
-    participant Sidebar as Sidebar.jsx
-    participant Card as PropertyCard.jsx
-    participant DetailPage as PropertyDetailPage.jsx (New Tab)
+    participant ListingsPage as ListingsPage.jsx
+    participant API as propertyApi.js (fetchProperties)
+    participant Express as Express Backend (properties.js)
+    participant DB as MySQL Database (rets_property & rets_openhouse)
 
-    User->>Sidebar: Click "Search" (/search)
-    Sidebar->>App: navigate('/search')
-    App->>App: Route /search matches
-    App-->>User: Render ListingsPage
-
-    User->>Card: Click property card
-    Card->>User: Open link in NEW TAB (target="_blank" href="/property/100002222")
-    Note over DetailPage: New tab opens /property/100002222
-    DetailPage->>App: Mount <PropertyDetailPage />
-    DetailPage->>DetailPage: Parallel fetch: fetchPropertyById() & fetchOpenHouses()
-    DetailPage-->>User: Render full property detail view
+    User->>ListingsPage: Apply filters / change sort / change page
+    ListingsPage->>API: fetchProperties({ limit, offset, city, state, minPrice, sortCriteria })
+    API->>Express: GET /api/properties?city=Portland&minPrice=300000&sortBy=price,date&sortOrder=asc,desc&limit=20&offset=0
+    
+    Express->>Express: validateQueryParams() (check types, ranges, whitelist)
+    Express->>Express: buildWhereClause() (data quality rules + user filters)
+    
+    Express->>DB: SELECT COUNT(*) FROM rets_property WHERE [whereSQL]
+    DB-->>Express: Returns total count (e.g., 87)
+    
+    Express->>DB: SELECT p.*, EXISTS(SELECT 1 FROM rets_openhouse oh WHERE...) AS hasOpenHouse<br/>FROM rets_property p<br/>WHERE [prefixedWhere]<br/>ORDER BY p.L_SystemPrice ASC, p.OnMarketDate DESC<br/>LIMIT 20 OFFSET 0
+    DB-->>Express: Returns 20 property rows (sub-5ms index-accelerated query)
+    
+    Express-->>API: 200 OK { total: 87, limit: 20, offset: 0, results: [...] }
+    API-->>ListingsPage: Update state (properties, total, loading=false)
+    ListingsPage-->>User: Render PropertyCard grid + Top/Bottom Pagination
 ```
 
 ---
 
-## 4. Property Detail Page Data Flow
+### Flow C: Favorites Management & ID List Search (`POST /api/properties/favorites`)
 
-Here is a step-by-step trace of how the Property Detail Page loads and renders data:
+```mermaid
+sequenceDiagram
+    participant User
+    participant Card as PropertyCard / DetailPage
+    participant Hook as useFavorites Hook (useFavorites.js)
+    participant Storage as localStorage ('favorites')
+    participant FavPage as FavoritesPage.jsx
+    participant API as propertyApi.js (fetchFavoriteProperties)
+    participant Express as Express Backend (properties.js)
+    participant DB as MySQL Database
+
+    User->>Card: Click Heart Toggle (♡ / ♥)
+    Card->>Hook: toggleFavorite(propertyId)
+    Hook->>Storage: Update localStorage JSON array
+    Hook-->>Card: Re-render card with updated favorite icon
+    Storage->>Hook: Window 'storage' event syncs state across open browser tabs
+
+    User->>FavPage: Navigate to /favorites route
+    FavPage->>Hook: Read array of favorite display IDs
+    FavPage->>API: fetchFavoriteProperties({ ids, limit, offset, sortCriteria, ...filters })
+    API->>Express: POST /api/properties/favorites?limit=20&offset=0 (Body: { ids: [...] })
+    
+    Express->>Express: Validate IDs array & query parameters
+    Express->>DB: SELECT COUNT(*) & SELECT p.* FROM rets_property p<br/>WHERE p.L_DisplayId IN (?, ?) AND [prefixedWhere]
+    DB-->>Express: Returns count & favorited property records
+    Express-->>API: 200 OK { total, limit, offset, results: [...] }
+    API-->>FavPage: Update properties state
+    FavPage-->>User: Render favorited PropertyCard grid
+
+    User->>FavPage: Click Heart on a card or click "Remove All"
+    FavPage->>Hook: toggleFavorite(id) / clearFavorites()
+    FavPage->>FavPage: Optimistically remove card from state & shift list left immediately
+```
+
+---
+
+### Flow D: Property Detail Page & Parallel Open Houses Fetch (`GET /api/properties/:id` & `GET /api/properties/:id/openhouses`)
 
 ```mermaid
 sequenceDiagram
     participant User
     participant DP as PropertyDetailPage.jsx
     participant API as propertyApi.js
-    participant Backend as Express Backend (/api/properties)
+    participant Express as Express Backend (properties.js)
     participant DB as MySQL Database (rets_property & rets_openhouse)
 
-    User->>DP: Opens /property/:id (in new tab)
+    User->>DP: Click property card (opens /property/:id in NEW TAB)
     DP->>DP: useEffect extracts ID from useParams()
     DP->>API: Promise.all([ fetchPropertyById(id), fetchOpenHouses(id) ])
-    
-    API->>Backend: GET /api/properties/:id
-    Backend->>DB: SELECT ${PROPERTY_DETAIL_COLUMNS} FROM rets_property WHERE L_DisplayId = ?
-    DB-->>Backend: Returns row
-    Backend-->>API: 200 OK with property details object
 
-    API->>Backend: GET /api/properties/:id/openhouses
-    Backend->>DB: SELECT FROM rets_openhouse INNER JOIN rets_property ...
-    DB-->>Backend: Returns open house rows
-    Backend->>Backend: Computes server-side status (active/expired/upcoming)
-    Backend-->>API: 200 OK with open houses array
+    par Fetch Property Detail
+        API->>Express: GET /api/properties/:id
+        Express->>Express: buildDetailSelect() using PROPERTY_DETAIL_COLUMNS array
+        Express->>DB: SELECT ${PROPERTY_DETAIL_COLUMNS} FROM rets_property WHERE L_DisplayId = ?
+        DB-->>Express: Returns single property record
+        Express-->>API: 200 OK property detail object
+    and Fetch Open Houses
+        API->>Express: GET /api/properties/:id/openhouses
+        Express->>DB: SELECT oh.* FROM rets_openhouse oh<br/>INNER JOIN rets_property p ON oh.L_DisplayId = p.L_DisplayId<br/>WHERE oh.L_DisplayId = ? AND oh.OH_StartDate <= oh.OH_EndDate
+        DB-->>Express: Returns open house records
+        Express->>Express: Calculate server-side status (active / expired / upcoming)
+        Express-->>API: 200 OK { listingId, openHouses: [...] }
+    end
 
     API-->>DP: Return [ propertyData, openHouseData ]
-    DP->>DP: Filter extraFields (property fields not in SPECIAL_FIELDS)
-    DP-->>User: Render Gallery, Dynamic Details Grid, Info Column, PropertyMap, & Open Houses
+    DP->>DP: Filter extraFields (columns not in SPECIAL_FIELDS set)
+    DP-->>User: Render Image Gallery (lightbox), Dynamic Details Grid,<br/>Info Column (Save button), Google Maps iframe, & Open Houses Schedule
 ```
 
 ---
 
-## 5. Data Flow Details & Mappings
+### Flow E: Open Houses Calendar & Date Range Search (`GET /api/openhouses`)
 
-### Listing & Property Field Mappings
+```mermaid
+sequenceDiagram
+    participant User
+    participant OHP as OpenHousesPage.jsx
+    participant Cal as react-big-calendar
+    participant Chat as ChatAssistant.jsx
+    participant API as propertyApi.js (fetchAllOpenHouses)
+    participant Express as Express Backend (openhouses.js)
+    participant DB as MySQL Database (rets_openhouse & rets_property)
 
-The backend maps database columns into structured JSON objects:
+    User->>OHP: Navigate to /openhouses route
+    OHP->>API: Promise.all([ loadOpenHouses(null), loadCalendarEvents(monthDate) ])
+    API->>Express: GET /api/openhouses?limit=20&offset=0 & GET /api/openhouses?startDate=...&endDate=...&limit=500
+    Express->>DB: SELECT oh.*, p.* FROM rets_openhouse oh INNER JOIN rets_property p ON oh.L_DisplayId = p.L_DisplayId
+    DB-->>Express: Return open house event records
+    Express-->>API: 200 OK { total, limit, offset, results: [...] }
+    API-->>OHP: Update openHouses & calendarEvents state
+    OHP-->>Cal: Render month events + day highlight classes
+    OHP-->>User: Display month calendar, property filters, sort controls, and open house card grid
 
-| DB Column | API Alias | Component / Feature |
-|-----------|-----------|--------------------|
-| `L_ListingID` | `listingId` | Unique listing ID |
-| `L_DisplayId` | `displayId` / `propertyId` | URL parameter & property lookup ID |
-| `L_SystemPrice` | `listPrice` | Formatted via `formatPrice()` |
-| `L_Address` | `address` | Card & Detail page header |
-| `L_City` | `city` | Location line & filter |
-| `L_State` | `state` | Location line & filter |
-| `L_Zip` | `zipCode` | Location line & filter |
-| `L_Keyword2` | `beds` | Stats bar |
-| `LM_Dec_3` | `baths` | Stats bar |
-| `LM_Int2_3` | `sqft` | Stats bar |
-| `YearBuilt` | `yearBuilt` | Detail page stats bar |
-| `L_Remarks` | `description` | Detail page description section |
-| `L_Photos` | `photos` | Parsed via `parsePhotos()` into URL array |
-| `LMD_MP_Latitude` | `latitude` | Used by `<PropertyMap />` |
-| `LMD_MP_Longitude` | `longitude` | Used by `<PropertyMap />` |
-| `L_Type_` | `propertyType` | Dynamic "Property Details" grid |
-| `L_Status` | `status` | Dynamic "Property Details" grid |
-| `[Other Cols]` | `[alias]` | Dynamic "Property Details" grid (via `PROPERTY_DETAIL_COLUMNS`) |
-
-### Open House Event Object Structure
-
-Returned by `GET /api/properties/:id/openhouses`:
-
-| Property | Type | Description / UI Badge |
-|----------|------|------------------------|
-| `listingId` | String | Property display ID |
-| `date` | String | Formatted via `formatDate()` |
-| `startTime` | String | Formatted via `formatTime()` |
-| `endTime` | String | Formatted via `formatTime()` |
-| `status` | String | `"active"` (🟢 Green), `"expired"` (🔴 Red), `"upcoming"` (🔵 Blue) |
-| `OpenHouseRemarks` | String | Agent remarks string |
+    alt 2-Click Calendar Range Selection
+        User->>Cal: Click 1st date (Start)
+        Cal->>OHP: handleSelectSlot() -> set start endpoint (.calendar-day--range-endpoint)
+        User->>Cal: Click 2nd date (End)
+        Cal->>OHP: handleSelectSlot() -> auto-swap if end < start -> apply range filter
+        OHP->>API: fetchAllOpenHouses({ startDate, endDate, ...filters, sortCriteria })
+        API->>Express: GET /api/openhouses?startDate=...&endDate=...
+        Express-->>API: 200 OK filtered results
+        API-->>OHP: Update card grid & active range chip (dynamic local timezone format)
+    else Conversational AI Assistance
+        User->>Chat: "Show open houses in August in Los Angeles"
+        Chat->>OHP: handleChatFiltersChange({ startDate: '2024-08-01', endDate: '2024-08-31', city: 'Los Angeles' })
+        OHP->>OHP: Auto-fill dateRange and filterFormValues with highlight animation
+    end
+```
 
 ---
 
-## 6. Formatting Utilities (`utils/format.js`)
+## 5. Formatting Utilities (`utils/format.js`)
 
 1. **`formatPrice(price)`**: Converts numbers to USD currency format (`459900` → `$459,900`).
 2. **`parsePhotos(photosStr)`**: Safely parses `L_Photos` JSON strings into URL arrays.
 3. **`formatTime(timeStr)`**: Formats database time strings (`"0 days 14:00:00"` → `"2:00 PM"`).
-4. **`formatDate(dateStr)`**: Formats ISO date strings into readable dates (`"Sat, Jun 15, 2026"`).
+4. **`formatDate(dateStr, locale)`**: Parses `YYYY-MM-DD` date-only strings as local midnight (`new Date(year, month - 1, day)`) to dynamically format dates in the user's browser timezone without UTC offset shifts.
+
+

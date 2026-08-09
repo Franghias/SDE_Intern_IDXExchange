@@ -286,4 +286,214 @@
   - Moved the dynamic "Property Details" section into `.detail-page__gallery-col` directly below the `<PropertyImageGallery>` component
   - Updated `PropertyDetailPage.css` with margin-top rules for proper spacing under the photo thumbnail strip
 - Files: `backend/src/routes/properties.js`, `frontend/src/App.jsx`, `frontend/src/components/Sidebar.jsx`, `frontend/src/pages/IntroductionPage.jsx`, `frontend/src/components/PropertyCard.jsx`, `frontend/src/stylesheets/PropertyCard.css`, `frontend/src/components/PropertyImageCarousel.jsx`, `frontend/src/stylesheets/PropertyImageCarousel.css`, `frontend/src/components/PropertyImageGallery.jsx`, `frontend/src/stylesheets/PropertyImageGallery.css`, `frontend/src/components/PropertyMap.jsx`, `frontend/src/stylesheets/PropertyMap.css`, `frontend/src/pages/PropertyDetailPage.jsx`, `frontend/src/stylesheets/PropertyDetailPage.css`, `frontend/src/api/propertyApi.js`, `frontend/src/utils/format.js`, `frontend/.env`, `frontend/.env.example`, `frontend/package.json`, `docs/decision_log.md`, `docs/change_log.md`
+- **Frontend — Open house `all_data` details grid (`frontend/src/pages/PropertyDetailPage.jsx`):**
+  - Added `OPEN_HOUSE_SPECIAL_FIELDS` set listing keys already rendered by dedicated UI (`date`, `startTime`, `endTime`, `status`, `listingId`, `startDate`, `endDate`, `OpenHouseRemarks`)
+  - Inside each open house card, after the time row, added a two-column details grid that renders all remaining non-null/non-empty key-value pairs from the open house object
+  - Uses existing `toLabel()` function to convert camelCase keys to readable labels (e.g., `PropertyType` → `Property Type`)
+  - `OpenHouseRemarks` keeps its existing dedicated italic paragraph rendering — excluded from grid to avoid duplication
+- **Frontend — Open house details grid styles (`frontend/src/stylesheets/PropertyDetailPage.css`):**
+  - Added `.detail-page__openhouse-details-grid` — two-column CSS grid with top border separator, full-width within each open house card
+  - Added `.detail-page__openhouse-detail-item` — flex column layout with bottom border, matching the Property Details grid pattern
+  - Added `.detail-page__openhouse-detail-label` — uppercase muted label text
+  - Added `.detail-page__openhouse-detail-value` — main text with word-break for long URLs
+  - Added responsive rule: grid collapses to single column below 900px
+- Files: `frontend/src/pages/PropertyDetailPage.jsx`, `frontend/src/stylesheets/PropertyDetailPage.css`, `docs/decision_log.md`, `docs/change_log.md`
+
+#### 2026-07-28 — Week 9: Advanced Feature (Sorting) + StandardStatus
+- **Backend — Sorting support (`backend/src/routes/properties.js`):**
+  - Added `SORT_WHITELIST` mapping of API sort names to actual SQL column names: `price` → `L_SystemPrice`, `date` → `OnMarketDate`, `sqft` → `LM_Int2_3`, `beds` → `L_Keyword2`, `baths` → `LM_Dec_3`
+  - Added multi-column sort validation in `validateQueryParams()`: accepts comma-separated `sortBy` and `sortOrder` query params (e.g., `?sortBy=price,date&sortOrder=asc,desc`)
+  - Validates each field against whitelist, each order against `asc`/`desc`, and that counts match
+  - Builds `ORDER BY` clause with multiple columns from validated `filters.sortCriteria` array
+  - When `sortBy` is not provided, no `ORDER BY` clause is added (preserves default DB order)
+  - Invalid `sortBy` returns 400 with "sortBy must be one of: price, date, sqft, beds, baths"
+  - Mismatched counts return 400 with "sortBy and sortOrder must have the same number of values"
+- **Backend — StandardStatus (`backend/src/routes/properties.js`):**
+  - Replaced `{ db: 'L_Status', alias: 'status' }` with `{ db: 'StandardStatus', alias: 'status' }` in `PROPERTY_DETAIL_COLUMNS`
+  - Added `p.StandardStatus AS status` to the listings `SELECT` query so PropertyCard can display it
+- **Frontend — API client (`frontend/src/api/propertyApi.js`):**
+  - Updated `fetchProperties()` to accept `sortCriteria` array of `{field, order}` objects
+  - Converts array to comma-separated `sortBy` and `sortOrder` query params
+- **Frontend — SortControls component (NEW):**
+  - Created `frontend/src/components/SortControls.jsx` — multi-column sort UI
+  - Users select a field from dropdown, choose direction, click "Add" to build sort criteria
+  - Active criteria display as removable tags with "×" buttons and "Clear" button
+  - Each field can only be used once (used fields hidden from dropdown)
+  - Date field shows "Oldest First / Newest First"; others show "Low to High / High to Low"
+  - Created `frontend/src/stylesheets/SortControls.css` — tag-based UI with consistent design system styling
+- **Frontend — ListingsPage integration (`frontend/src/pages/ListingsPage.jsx`):**
+  - Added `sortCriteria` state (array of `{field, order}`)
+  - Sort criteria passed through `loadProperties()` → `fetchProperties()`
+  - Sort persists across page changes, resets when filters change or are cleared
+  - `<SortControls>` placed in `.pagination-controls` row (left side) in both top and bottom pagination
+- **Frontend — PropertyCard status badge (`frontend/src/components/PropertyCard.jsx`, `frontend/src/stylesheets/PropertyCard.css`):**
+  - Added `property.status` badge in bottom-right of card body
+  - Green badge for "Active" status, red badge for any other status (e.g., "Pending")
+  - Uses `.property-card__status-badge` with `--active` / `--inactive` modifiers
+- **Frontend — PropertyDetailPage status badge (`frontend/src/pages/PropertyDetailPage.jsx`, `frontend/src/stylesheets/PropertyDetailPage.css`):**
+  - Added `status` to `SPECIAL_FIELDS` set to prevent duplicate rendering in generic details grid
+  - Added dedicated status badge between price and address
+  - Same green/red color scheme as PropertyCard for consistency
+- **Backend tests (`backend/tests/properties.test.js`):**
+  - Added 10 new tests in `Week 9 — Sorting` describe block: single-column sort asc/desc, invalid sortBy (400), invalid sortOrder (400), default ascending, sort + filters combined, no ORDER BY without sortBy, date column mapping, multi-column sort, mismatched counts (400)
+  - Added 1 new test in `Week 9 — StandardStatus`: verifies `StandardStatus` column in SELECT query
+  - All 29 tests pass (18 Week 3 + 10 Week 9 Sorting + 1 Week 9 StandardStatus)
+- **Frontend tests (`frontend/src/test/SortControls.test.jsx`):**
+  - Created 7 tests: renders all fields, shows order dropdown after selection, calls onChange with criteria, displays tags, removes tag, clears all, hides used fields
+  - All 7 tests pass
+- Files: `backend/src/routes/properties.js`, `backend/tests/properties.test.js`, `frontend/src/api/propertyApi.js`, `frontend/src/components/SortControls.jsx`, `frontend/src/stylesheets/SortControls.css`, `frontend/src/pages/ListingsPage.jsx`, `frontend/src/components/PropertyCard.jsx`, `frontend/src/stylesheets/PropertyCard.css`, `frontend/src/pages/PropertyDetailPage.jsx`, `frontend/src/stylesheets/PropertyDetailPage.css`, `frontend/src/test/SortControls.test.jsx`, `docs/decision_log.md`, `docs/change_log.md`
+
+#### 2026-07-29 — Week 9: Advanced Feature (Favorites)
+- **Frontend Custom Hook (`frontend/src/hooks/useFavorites.js`):**
+  - Created `useFavorites()` custom hook to encapsulate `localStorage` reading, writing, toggling, clearing, and cross-tab sync (`storage` event listener)
+- **Backend Favorites Endpoint (`backend/src/routes/properties.js`):**
+  - Added `POST /api/properties/favorites` endpoint to query favorited properties by array of display IDs
+  - Validates `ids` array and listing ID format
+  - Reuses filtering, sorting, pagination, and open house JOIN subquery logic from main property search endpoint
+- **Frontend API Client (`frontend/src/api/propertyApi.js`):**
+  - Added `fetchFavoriteProperties({ ids, limit, offset, sortCriteria, ...filters })` function calling `POST /api/properties/favorites`
+- **PropertyCard Heart Button (`frontend/src/components/PropertyCard.jsx`, `frontend/src/stylesheets/PropertyCard.css`):**
+  - Added heart button top-left on card image overlay with `e.stopPropagation()` and `e.preventDefault()`
+  - Displays filled red heart (`♥`) when favorited, outlined heart (`♡`) when not
+- **PropertyDetailPage Save Button (`frontend/src/pages/PropertyDetailPage.jsx`, `frontend/src/stylesheets/PropertyDetailPage.css`):**
+  - Added "Save" / "Saved" favorite button next to the property price in the header
+- **FavoritesPage (`frontend/src/pages/FavoritesPage.jsx`, `frontend/src/stylesheets/FavoritesPage.css`):**
+  - Created dedicated `/favorites` view featuring `PropertyFilters`, `SortControls`, `Pagination`, per-page selector, and property cards
+  - Includes a "Remove All" button in the header to clear all saved favorites
+  - Instantly removes card from state on unfavoriting so remaining cards shift left seamlessly
+  - Shows custom empty state when no favorites exist
+- **Sidebar Favorites Nav Link & Badge (`frontend/src/components/Sidebar.jsx`, `frontend/src/stylesheets/Sidebar.css`):**
+  - Added "Favorites" nav link with heart icon (`❤️`) and live count badge (`.sidebar__badge`) showing current favorite count
+- **App Router (`frontend/src/App.jsx`):**
+  - Added `<Route path="/favorites" element={<FavoritesPage />} />`
+- **Unit & Integration Tests:**
+  - Created `frontend/src/test/useFavorites.test.js` (5 tests covering toggle, persistence, clear, cross-tab sync)
+  - Updated `backend/tests/properties.test.js` (4 new tests covering `POST /api/properties/favorites`)
+  - All 55 backend tests and 34 frontend tests pass
+- Files: `frontend/src/hooks/useFavorites.js`, `frontend/src/api/propertyApi.js`, `backend/src/routes/properties.js`, `frontend/src/components/PropertyCard.jsx`, `frontend/src/stylesheets/PropertyCard.css`, `frontend/src/pages/PropertyDetailPage.jsx`, `frontend/src/stylesheets/PropertyDetailPage.css`, `frontend/src/pages/FavoritesPage.jsx`, `frontend/src/stylesheets/FavoritesPage.css`, `frontend/src/components/Sidebar.jsx`, `frontend/src/stylesheets/Sidebar.css`, `frontend/src/App.jsx`, `frontend/src/test/useFavorites.test.js`, `backend/tests/properties.test.js`, `docs/decision_log.md`, `docs/change_log.md`
+
+#### 2026-08-05 — Week 10: Conversational AI Chatbot Assistant & Open House Filters/Sorting
+- **Backend OpenRouter Chat Endpoint (`backend/src/routes/chat.js`):**
+  - Created `POST /api/chat` route that proxies requests to OpenRouter (`cohere/north-mini-code:free`)
+  - Loads `LLM_API_KEY` and `LLM_MODEL` from `backend/.env` and `backend/.env.example`
+  - Includes a security-hardened system prompt enforcing prompt injection protection, role manipulation prevention, security exploit denial, and real estate domain scoping
+  - Returns JSON response: `{ message: string, filters: object }`
+- **Backend Open Houses Endpoint Enhancements (`backend/src/routes/openhouses.js`):**
+  - Extended `GET /api/openhouses` route to accept property filter parameters (`city`, `state`, `zipcode`, `minPrice`, `maxPrice`, `beds`, `baths`) and multi-column sorting parameters (`sortBy`, `sortOrder`)
+  - Built parameterized SQL conditions for property filters and validated sort keys against `SORT_WHITELIST` (`price`, `date`, `sqft`, `beds`, `baths`)
+- **Frontend API Client (`frontend/src/api/chatApi.js`, `frontend/src/api/propertyApi.js`):**
+  - Created `chatApi.js` with `sendChatMessage()` helper sending message history, active filter state, and page context to `/api/chat`
+  - Updated `fetchAllOpenHouses()` in `propertyApi.js` to accept `sortCriteria` and property filter parameters
+- **Frontend ChatAssistant Component (`frontend/src/components/ChatAssistant.jsx`, `frontend/src/stylesheets/ChatAssistant.css`):**
+  - Created reusable AI chatbot component with collapsible panel, message history, typing indicator dots, filter change badges, and clear button
+  - Maintains isolated conversation memory per page session (`useState`)
+  - Auto-fills search filters on the parent page without triggering immediate search execution
+- **Frontend Filter & Sorting Integration (`frontend/src/components/PropertyFilters.jsx`, `frontend/src/pages/ListingsPage.jsx`, `frontend/src/pages/FavoritesPage.jsx`, `frontend/src/pages/OpenHousesPage.jsx`):**
+  - Refactored `PropertyFilters.jsx` to support controlled state mode and added field change highlight animations (`.property-filters__field--changed`)
+  - Integrated `ChatAssistant` above search filters on `ListingsPage` and `FavoritesPage`
+  - Integrated `ChatAssistant` above calendar and added `PropertyFilters` + `SortControls` below calendar on `OpenHousesPage`
+  - Rendered `SortControls` below `PropertyFilters` on `FavoritesPage`, `ListingsPage`, and `OpenHousesPage` regardless of `totalPages` count
+- **Unit & Integration Tests:**
+  - Added sorting tests to `backend/tests/openhouses.test.js`
+  - All 77 backend tests and 40 frontend tests pass
+- Files: `backend/.env`, `backend/.env.example`, `backend/src/app.js`, `backend/src/routes/chat.js`, `backend/src/routes/openhouses.js`, `backend/tests/openhouses.test.js`, `frontend/src/api/chatApi.js`, `frontend/src/api/propertyApi.js`, `frontend/src/components/ChatAssistant.jsx`, `frontend/src/stylesheets/ChatAssistant.css`, `frontend/src/components/PropertyFilters.jsx`, `frontend/src/stylesheets/PropertyFilters.css`, `frontend/src/pages/ListingsPage.jsx`, `frontend/src/pages/FavoritesPage.jsx`, `frontend/src/pages/OpenHousesPage.jsx`, `frontend/src/stylesheets/OpenHousesPage.css`, `docs/decision_log.md`, `docs/change_log.md`
+
+#### 2026-08-06 — Week 10: In-Memory Page Cache Optimization & Date Range Math Clarification
+- **Frontend — In-Memory Component Page Caching (`ListingsPage.jsx`, `FavoritesPage.jsx`, `OpenHousesPage.jsx`):**
+  - Created module-level cache variables (`listingsCache`, `favoritesCache`, `openHousesCache`) that persist across React Router component mount/unmount cycles.
+  - Page components initialize state from cache when available, skipping redundant network API calls when navigating away and back to previously loaded pages.
+  - API re-fetching is strictly scoped to explicit user actions: applying or clearing search filters, changing sort criteria, modifying date ranges or calendar selections, changing pagination/items-per-page, or mutating saved favorites.
+  - Restored visual form state (`filterFormValues`, `dateRange`, `calendarSelection`) on mount when returning to cached pages.
+- **Frontend — Calendar Month Date Math Verification (`OpenHousesPage.jsx`):**
+  - Verified `loadCalendarEvents` month boundary calculation: `startDate = format(new Date(year, month, 1))` and `endDate = format(new Date(year, month + 1, 0))`.
+  - Documented that day `0` in JavaScript's `Date` constructor rolls back to the final day of the current month (e.g., `2026-08-31` for August 2026).
+- Files: `frontend/src/pages/ListingsPage.jsx`, `frontend/src/pages/FavoritesPage.jsx`, `frontend/src/pages/OpenHousesPage.jsx`, `docs/decision_log.md`, `docs/change_log.md`, `docs/FLOW.md`, `README.md`, `frontend/README.md`
+
+#### 2026-08-06 — Week 10: Chatbot System Prompt Hardening & Non-Disruptive Scroll UX
+- **Backend — Chat Route System Prompt & OpenRouter Format (`backend/src/routes/chat.js`):**
+  - Reinforced `buildSystemPrompt()` with strict negative rules forbidding plain text preambles, markdown code blocks, XML tags, and `<tool_call>` syntax.
+  - Added a concrete multi-field output example showing simultaneous `minPrice` and `maxPrice` JSON formatting.
+  - Configured `response_format: { type: 'json_object' }` and lowered `temperature` to `0.1` in the OpenRouter API payload.
+- **Frontend — ChatAssistant Container-Only Auto-Scroll (`frontend/src/components/ChatAssistant.jsx`):**
+  - Removed page-level `messagesEndRef.current.scrollIntoView()`.
+  - Implemented container-level `messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight` to isolate auto-scrolling to the chat panel message log without scrolling or jumping the main browser window/filters.
+- Files: `backend/src/routes/chat.js`, `frontend/src/components/ChatAssistant.jsx`, `docs/decision_log.md`, `docs/change_log.md`, `docs/FLOW.md`, `README.md`, `frontend/README.md`
+
+#### 2026-08-06 — Week 10: Dedicated AI Chatbot Search Page (`/chat-search`)
+- **Frontend — Dedicated Chat Search Page (`frontend/src/pages/ChatSearchPage.jsx`, `frontend/src/stylesheets/ChatSearchPage.css`):**
+  - Created `ChatSearchPage.jsx` component providing conversational property search without manual filter or sort forms.
+  - Automatically triggers property API fetches immediately when the chatbot outputs filter updates.
+  - Supports `defaultOpen` prop on `ChatAssistant.jsx` to render chat panel open by default.
+  - Added module-level caching (`chatSearchCache`) for route navigation persistence.
+- **Frontend — Navigation & Routing (`frontend/src/App.jsx`, `frontend/src/components/Sidebar.jsx`):**
+  - Registered `/chat-search` route in `App.jsx`.
+  - Added "AI Search" navigation link (`🤖`) to `Sidebar.jsx`.
+- **Frontend — Unit Tests (`frontend/src/test/ChatSearchPage.test.jsx`):**
+  - Created test suite verifying page rendering, automatic API execution on chat filter updates, chatbot sorting parameters, absence of manual filter/sort forms, empty state, and error handling.
+- **Backend & Frontend — Conversational Sorting Support (`backend/src/routes/chat.js`, `frontend/src/components/ChatAssistant.jsx`):**
+  - Added sorting instructions for `price`, `date` (Date Listed), `sqft`, `beds`, and `baths` to system prompt in `chat.js`.
+  - Defined ordering rules for `asc` (Low to High / Oldest First) and `desc` (High to Low / Newest First).
+  - Updated `isKnownFilter` and `formatFieldName` in `ChatAssistant.jsx` to recognize `sortBy` and `sortOrder` filter keys.
+#### 2026-08-09 — Week 10: Dynamic Local Timezone Date Formatting & Conversational Chat Response Guard
+- **Frontend — Dynamic Timezone Local Date Parsing (`frontend/src/utils/format.js`):**
+  - Resolved date offset shift bug in `formatDate` where filtering date ranges (e.g., `2024-08-01` to `2024-08-31`) displayed the previous day (`Wednesday, Jul 31, 2024 — Friday, Aug 30, 2024`) for users in timezones behind UTC (such as US Central/Eastern).
+  - Updated `formatDate` to parse `YYYY-MM-DD` date-only strings into local year/month/day components (`new Date(year, month - 1, day)`), creating local midnight objects in the user's browser timezone.
+  - Formats date strings dynamically using the browser's dynamic timezone and locale (`toLocaleDateString(locale || undefined)`).
+  - Created `frontend/src/test/format.test.js` unit test suite covering date-only strings, null inputs, price formatting, and time formatting.
+- **Backend & Frontend — Conversational Chat Response & Redundant Query Guard (`backend/src/routes/chat.js`, `frontend/src/components/ChatAssistant.jsx`, `frontend/src/pages/ChatSearchPage.jsx`):**
+  - Updated system prompt in `chat.js` with strict rules instructing the LLM to return `"filters": {}` when user sends greetings ("hi", "hello"), polite remarks ("thank you", "thanks"), small talk, or any input not modifying search filters.
+  - Updated `ChatAssistant.jsx` to compare proposed filter values against current filter state (`String(newFilters[key] ?? '') !== stringVal`), invoking `onFiltersChange` only if at least one value changed.
+  - Enhanced `handleChatFiltersChange` in `ChatSearchPage.jsx` using `new Set([...Object.keys(newFilters), ...Object.keys(activeFilters)])` to prevent duplicate backend queries (`GET /api/properties`) when user sends non-filter messages.
+  - Added unit tests in `ChatSearchPage.test.jsx` verifying conversational follow-ups do not trigger redundant API calls.
+- Files: `frontend/src/utils/format.js`, `frontend/src/test/format.test.js`, `backend/src/routes/chat.js`, `frontend/src/components/ChatAssistant.jsx`, `frontend/src/pages/ChatSearchPage.jsx`, `frontend/src/test/ChatSearchPage.test.jsx`, `docs/decision_log.md`, `docs/change_log.md`
+
+#### 2026-08-09 — Week 9: Part B — Database Query Performance Optimization & EXPLAIN Benchmark Suite
+- **Database Composite Indexing (`database/03_add_indexes.sql`):**
+  - Added composite index `idx_city_price (L_City, L_SystemPrice)` on `rets_property` to eliminate filesort overhead on city searches sorted by price.
+  - Added composite index `idx_date_startTime_displayId (OpenHouseDate, OH_StartTime, L_DisplayId)` on `rets_openhouse` to eliminate full table scans and filesort passes on open house date range queries.
+  - Created both indexes on active MySQL database container.
+- **Backend Properties Route Optimization (`backend/src/routes/properties.js`):**
+  - Eliminated `LOWER()` function wrappers in SQL (`LOWER(p.L_City) = LOWER(?)` → `p.L_City = ?`), leveraging JavaScript `toTitleCase()` normalization and MySQL 8's case-insensitive collation (`utf8mb4_0900_ai_ci`) to enable direct B-Tree index lookups (`idx_city`, `idx_city_price`), reducing execution latency from ~5,747ms to ~3.2ms (>1,700x speedup).
+  - Replaced table-wide derived `LEFT JOIN (GROUP BY)` temporary table aggregation for `hasOpenHouse` with a lightweight correlated `EXISTS (SELECT 1 FROM rets_openhouse WHERE ...)` subquery, eliminating internal temporary tables (`Using temporary`).
+  - Streamlined data quality filter generation to skip redundant regex checks in SQL when filter parameters are already validated in Express.
+- **Backend Open Houses Route Optimization (`backend/src/routes/openhouses.js`):**
+  - Normalized city and state query parameters with `toTitleCase()`.
+  - Switched from wildcard `p.L_City LIKE '%...%'` to exact indexed equality `p.L_City = ?` and `p.L_State = ?`, dropping latency from ~1,133ms to ~2.2ms (>500x speedup).
+- **Automated Performance & EXPLAIN Benchmark Suite (`backend/tests/query_performance.js`, `backend/package.json`):**
+  - Created `backend/tests/query_performance.js` script with complete column interpretation reference, active table index maps, MySQL 8 `EXPLAIN ANALYZE` execution trees, and high-resolution timing benchmarks across all queries.
+  - Added `"perf": "node tests/query_performance.js"` npm script to `backend/package.json`.
+  - Generated comprehensive summary documentation in `backend/OPTIMIZATION_REPORT.md`.
+- **Unit & Integration Tests:**
+  - Verified all 79 backend tests (`npm test`) and 53 frontend tests pass cleanly with zero regressions.
+- Files: `database/03_add_indexes.sql`, `backend/src/routes/properties.js`, `backend/src/routes/openhouses.js`, `backend/tests/query_performance.js`, `backend/package.json`, `backend/OPTIMIZATION_REPORT.md`, `docs/decision_log.md`, `docs/change_log.md`
+
+#### 2026-08-09 — Request Logging Middleware Enhancement & React Error Boundary with Recovery UI
+- **Backend — Enhanced Request Logging Middleware (`backend/src/middleware/requestLogger.js`):**
+  - Enhanced duration calculation using `process.hrtime.bigint()` for accurate sub-millisecond duration rounding to integer milliseconds.
+  - Attached `X-Response-Time: <ms>ms` HTTP response header to outgoing responses via `res.writeHead` hook before response headers are flushed.
+  - Attached listeners for both `finish` and `close` response lifecycle events with a deduplication guard flag (`logged`) to ensure aborted/terminated connections are accurately timed and logged without duplicate outputs.
+  - Maintained full backwards compatibility with standard log format: `[${timestamp}] ${req.method} ${url} ${res.statusCode} ${duration}ms`.
+- **Backend — Dedicated Request Logger Test Suite (`backend/tests/requestLogger.test.js`):**
+  - Created Jest test suite with 9 tests covering: standard 200 response logging format, simulated delayed endpoints (>= 50ms), presence and format of `X-Response-Time` header, `POST / 201 Created` logging, `400 Bad Request`, `404 Not Found`, `500 Server Error`, lifecycle listeners for `finish` and `close` without duplicates, and `req.url` fallback.
+  - All 88 backend tests across 5 test suites pass cleanly via `npm test`.
+- **Frontend — React Error Boundary Component (`frontend/src/components/ErrorBoundary.jsx`, `frontend/src/stylesheets/ErrorBoundary.css`):**
+  - Built a React 19 class-based `<ErrorBoundary>` component implementing `static getDerivedStateFromError` and `componentDidCatch`.
+  - Implemented an actionable recovery UI adhering to design system tokens with:
+    - Alert icon badge and user-friendly error explanation.
+    - Recovery buttons: **"Try Again"** (`resetErrorBoundary` to re-render component tree), **"Reload Page"** (`window.location.reload()`), and **"Return to Home"** (`window.location.href = '/'`).
+    - Collapsible technical diagnostics section showing `error.message`, component stack trace, and error stack.
+  - Supported flexible props: `fallback`, `fallbackRender`, `onError`, and `onReset`.
+  - Created glassmorphic stylesheet `ErrorBoundary.css` with responsive mobile layout and button interactions.
+- **Frontend — Application Layout Integration (`frontend/src/App.jsx`):**
+  - Wrapped the main route views (`<Routes>`) inside `<ErrorBoundary>` within `<main className="app-content">`.
+  - Preserves persistent `<Sidebar>` functionality even if an unhandled render error occurs on a specific page.
+- **Frontend — Error Boundary Unit Tests (`frontend/src/test/ErrorBoundary.test.jsx`):**
+  - Created Vitest + React Testing Library test suite with 8 tests covering: normal child rendering, render crash catching, default recovery UI display, `onError` and `onReset` callback invocations, "Try Again" recovery re-rendering flow, custom `fallback` element, custom `fallbackRender` function, and technical details toggle.
+  - All 61 frontend tests across 9 test suites pass cleanly via `npm test`.
+- Files: `backend/src/middleware/requestLogger.js`, `backend/tests/requestLogger.test.js`, `frontend/src/components/ErrorBoundary.jsx`, `frontend/src/stylesheets/ErrorBoundary.css`, `frontend/src/App.jsx`, `frontend/src/test/ErrorBoundary.test.jsx`, `docs/decision_log.md`, `docs/change_log.md`
+
+
+
+
+
 

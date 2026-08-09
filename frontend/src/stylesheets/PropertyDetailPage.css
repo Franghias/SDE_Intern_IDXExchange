@@ -38,13 +38,81 @@
   min-width: 0;
 }
 
-/* Price */
+/* Header row with price and favorite button */
+.detail-page__header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
 .detail-page__price {
   font-size: 2rem;
   font-weight: 700;
   color: var(--color-primary);
-  margin: 0 0 8px;
+  margin: 0;
   letter-spacing: -0.02em;
+}
+
+.detail-page__favorite-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.detail-page__favorite-btn:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+  border-color: var(--color-text-muted);
+  transform: translateY(-1px);
+}
+
+.detail-page__favorite-btn--active {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.detail-page__favorite-btn--active:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: #ef4444;
+}
+
+.detail-page__favorite-icon {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+/* Status badge */
+.detail-page__status-badge {
+  display: inline-block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 4px 12px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+}
+
+.detail-page__status-badge--active {
+  background: rgba(34, 197, 94, 0.12);
+  color: #16a34a;
+}
+
+.detail-page__status-badge--inactive {
+  background: rgba(239, 68, 68, 0.12);
+  color: #dc2626;
 }
 
 /* Address */
@@ -226,6 +294,38 @@
   font-style: italic;
 }
 
+/* Open house all_data details grid */
+.detail-page__openhouse-details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px 24px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--color-border);
+}
+
+.detail-page__openhouse-detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.detail-page__openhouse-detail-label {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.detail-page__openhouse-detail-value {
+  font-size: 0.9rem;
+  color: var(--color-text);
+  font-weight: 500;
+  word-break: break-word;
+}
+
 /* Loading and error states */
 .detail-page__loading {
   display: flex;
@@ -283,6 +383,10 @@
   }
 
   .detail-page__details-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-page__openhouse-details-grid {
     grid-template-columns: 1fr;
   }
 }
