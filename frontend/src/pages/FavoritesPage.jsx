@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { fetchFavoriteProperties } from '../api/propertyApi';
 import { useFavorites } from '../hooks/useFavorites';
+import { prefetchPromises } from '../utils/prefetchCache';
 import ChatAssistant from '../components/ChatAssistant';
 import PropertyFilters, { INITIAL_FILTERS } from '../components/PropertyFilters';
 import PropertyCard from '../components/PropertyCard';
@@ -91,8 +92,8 @@ function FavoritesPage() {
     []
   );
 
-  // On mount: only fetch if there is no cached data (first visit)
-  // or if the favorites list has changed since the last cached fetch.
+  // On mount: await prefetch Promise if available and favorites haven't changed,
+  // otherwise fetch. Re-fetches automatically when favorites list changes.
   useEffect(() => {
     const prevSnapshot = prevFavoritesRef.current;
     const favChanged =
@@ -101,8 +102,39 @@ function FavoritesPage() {
       prevSnapshot.some((id, i) => id !== favorites[i]);
 
     if (!favoritesCache || favChanged) {
-      prevFavoritesRef.current = [...favorites];
-      loadFavoriteProperties(favorites, activeFilters, currentPage, itemsPerPage, sortCriteria);
+      if (!favoritesCache && prefetchPromises.favorites) {
+        setLoading(true);
+        prefetchPromises.favorites.then((res) => {
+          if (
+            res &&
+            res.data &&
+            res.ids.length === favorites.length &&
+            res.ids.every((id, i) => id === favorites[i])
+          ) {
+            const data = res.data;
+            setProperties(data.results);
+            setTotal(data.total);
+            prevFavoritesRef.current = [...favorites];
+            favoritesCache = {
+              properties: data.results,
+              total: data.total,
+              activeFilters: {},
+              currentPage: 1,
+              itemsPerPage: 20,
+              sortCriteria: [],
+              favoritesSnapshot: [...favorites],
+              filterFormValues: { ...INITIAL_FILTERS },
+            };
+          } else {
+            prevFavoritesRef.current = [...favorites];
+            loadFavoriteProperties(favorites, activeFilters, currentPage, itemsPerPage, sortCriteria);
+          }
+          setLoading(false);
+        });
+      } else {
+        prevFavoritesRef.current = [...favorites];
+        loadFavoriteProperties(favorites, activeFilters, currentPage, itemsPerPage, sortCriteria);
+      }
     }
   }, [favorites]);
 
@@ -158,17 +190,31 @@ function FavoritesPage() {
   /**
    * Called by ChatAssistant when the LLM suggests new filter values.
    * Updates the form fields visually without triggering a search.
+   * Sort fields (sortBy/sortOrder) are intercepted and converted to sortCriteria.
    */
   function handleChatFiltersChange(newFilters) {
+    // Extract sort fields from the LLM response before processing filter fields
+    const { sortBy, sortOrder, ...filterFields } = newFilters;
+
+    // Convert LLM sort response to sortCriteria array if present
+    if (sortBy) {
+      const newCriteria = [{ field: sortBy, order: sortOrder || 'asc' }];
+      setSortCriteria(newCriteria);
+      if (favoritesCache) favoritesCache.sortCriteria = newCriteria;
+    }
+
     const changed = [];
-    for (const key of Object.keys(newFilters)) {
-      if (newFilters[key] !== filterFormValues[key]) {
+    for (const key of Object.keys(filterFields)) {
+      if (filterFields[key] !== filterFormValues[key]) {
         changed.push(key);
       }
     }
+    if (sortBy) changed.push('sortBy');
+    if (sortOrder) changed.push('sortOrder');
+
     setChangedFields(changed);
-    setFilterFormValues(newFilters);
-    if (favoritesCache) favoritesCache.filterFormValues = newFilters;
+    setFilterFormValues(filterFields);
+    if (favoritesCache) favoritesCache.filterFormValues = filterFields;
 
     if (changed.length > 0) {
       setTimeout(() => setChangedFields([]), 2500);

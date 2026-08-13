@@ -7,14 +7,30 @@ const PLACEHOLDER_IMG = 'https://placehold.co/800x500/1a1a2e/e0e0e0?text=No+Phot
 /**
  * Image gallery for the property detail page.
  * Main image + thumbnail strip + full-screen lightbox.
+ * Automatically filters out 404 / broken media records so they are not shown to users.
  */
 function PropertyImageGallery({ photosStr }) {
-  const photos = parsePhotos(photosStr);
+  const initialPhotos = parsePhotos(photosStr);
+  const [failedPhotos, setFailedPhotos] = useState(new Set());
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
-  const currentPhoto = photos.length > 0 ? photos[selectedIndex] : PLACEHOLDER_IMG;
-  const hasPhotos = photos.length > 0;
+  // Filter out any photo URLs that failed to load or returned a 404 Media record not found response
+  const validPhotos = initialPhotos.filter((p) => !failedPhotos.has(p));
+  const hasPhotos = validPhotos.length > 0;
+
+  // Keep selected index within bounds if photos are removed due to 404s
+  const safeIndex = Math.min(selectedIndex, Math.max(0, validPhotos.length - 1));
+  const currentPhoto = hasPhotos ? validPhotos[safeIndex] : PLACEHOLDER_IMG;
+
+  function handleImageError(url) {
+    if (!url || url === PLACEHOLDER_IMG) return;
+    setFailedPhotos((prev) => {
+      const next = new Set(prev);
+      next.add(url);
+      return next;
+    });
+  }
 
   // Lightbox keyboard navigation
   const handleKeyDown = useCallback((e) => {
@@ -22,11 +38,11 @@ function PropertyImageGallery({ photosStr }) {
     if (e.key === 'Escape') {
       setLightboxOpen(false);
     } else if (e.key === 'ArrowLeft') {
-      setSelectedIndex((prev) => (prev === 0 ? photos.length - 1 : prev - 1));
+      setSelectedIndex((prev) => (prev === 0 ? validPhotos.length - 1 : prev - 1));
     } else if (e.key === 'ArrowRight') {
-      setSelectedIndex((prev) => (prev === photos.length - 1 ? 0 : prev + 1));
+      setSelectedIndex((prev) => (prev === validPhotos.length - 1 ? 0 : prev + 1));
     }
-  }, [lightboxOpen, photos.length]);
+  }, [lightboxOpen, validPhotos.length]);
 
   useEffect(() => {
     if (lightboxOpen) {
@@ -58,7 +74,8 @@ function PropertyImageGallery({ photosStr }) {
         <img
           className="gallery__main-image"
           src={currentPhoto}
-          alt={hasPhotos ? `Photo ${selectedIndex + 1} of ${photos.length}` : 'No photo'}
+          alt={hasPhotos ? `Photo ${safeIndex + 1} of ${validPhotos.length}` : 'No photo'}
+          onError={() => handleImageError(currentPhoto)}
         />
         {hasPhotos && (
           <span className="gallery__expand-hint">🔍 Click to enlarge</span>
@@ -66,16 +83,21 @@ function PropertyImageGallery({ photosStr }) {
       </div>
 
       {/* Thumbnail strip */}
-      {photos.length > 1 && (
+      {validPhotos.length > 1 && (
         <div className="gallery__thumbnails" id="gallery-thumbnails">
-          {photos.map((photo, i) => (
+          {validPhotos.map((photo, i) => (
             <button
-              key={i}
-              className={`gallery__thumb${i === selectedIndex ? ' gallery__thumb--active' : ''}`}
+              key={photo + i}
+              className={`gallery__thumb${i === safeIndex ? ' gallery__thumb--active' : ''}`}
               onClick={() => setSelectedIndex(i)}
               aria-label={`View photo ${i + 1}`}
             >
-              <img src={photo} alt={`Thumbnail ${i + 1}`} loading="lazy" />
+              <img
+                src={photo}
+                alt={`Thumbnail ${i + 1}`}
+                loading="lazy"
+                onError={() => handleImageError(photo)}
+              />
             </button>
           ))}
         </div>
@@ -92,10 +114,10 @@ function PropertyImageGallery({ photosStr }) {
             ✕
           </button>
 
-          {photos.length > 1 && (
+          {validPhotos.length > 1 && (
             <button
               className="lightbox__arrow lightbox__arrow--prev"
-              onClick={() => setSelectedIndex((prev) => (prev === 0 ? photos.length - 1 : prev - 1))}
+              onClick={() => setSelectedIndex((prev) => (prev === 0 ? validPhotos.length - 1 : prev - 1))}
               aria-label="Previous photo"
             >
               ‹
@@ -104,14 +126,15 @@ function PropertyImageGallery({ photosStr }) {
 
           <img
             className="lightbox__image"
-            src={photos[selectedIndex]}
-            alt={`Photo ${selectedIndex + 1} of ${photos.length}`}
+            src={validPhotos[safeIndex]}
+            alt={`Photo ${safeIndex + 1} of ${validPhotos.length}`}
+            onError={() => handleImageError(validPhotos[safeIndex])}
           />
 
-          {photos.length > 1 && (
+          {validPhotos.length > 1 && (
             <button
               className="lightbox__arrow lightbox__arrow--next"
-              onClick={() => setSelectedIndex((prev) => (prev === photos.length - 1 ? 0 : prev + 1))}
+              onClick={() => setSelectedIndex((prev) => (prev === validPhotos.length - 1 ? 0 : prev + 1))}
               aria-label="Next photo"
             >
               ›
@@ -119,7 +142,7 @@ function PropertyImageGallery({ photosStr }) {
           )}
 
           <span className="lightbox__counter">
-            {selectedIndex + 1} / {photos.length}
+            {safeIndex + 1} / {validPhotos.length}
           </span>
         </div>
       )}

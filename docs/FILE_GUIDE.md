@@ -478,6 +478,16 @@ All backend tests use **Jest** + **supertest**. They import `app.js` directly (n
 
 ---
 
+### `frontend/src/utils/prefetchCache.js`
+**What it does:** Fires the 4 default initial API requests in parallel at app startup (`main.jsx`) before React renders. Stores the resulting Promises in `prefetchPromises` so that pages (`ListingsPage`, `FavoritesPage`, `OpenHousesPage`, and `ChatSearchPage`) can attach `.then()` handlers on mount, awaiting in-flight startup requests without triggering duplicate network calls or showing unnecessary loading spinners.
+
+**Exports:**
+- `prefetchInitialData()`: Fires parallel `fetchProperties`, `fetchFavoriteProperties`, and `fetchAllOpenHouses` calls once.
+- `prefetchPromises`: Shared object holding active `Promise` instances for page hydration.
+
+---
+
+
 ## 11. Frontend — Components
 
 ### `frontend/src/components/Sidebar.jsx`
@@ -768,6 +778,15 @@ All frontend tests use **Vitest** + **React Testing Library** + **@testing-libra
 - Network errors throw descriptive error messages.
 
 **How mocking works:** Uses `vi.stubGlobal('fetch', ...)` to replace the browser's `fetch()` with a mock that returns controlled responses.
+
+---
+
+### `frontend/src/test/prefetchCache.test.js`
+**Tests 4 scenarios for the prefetch cache utility (`prefetchCache.js`):**
+- Fires app-boot `prefetchPromises` in parallel for `fetchProperties` and `fetchAllOpenHouses`.
+- Checks `localStorage` for favorite IDs and conditionally pre-fetches favorites.
+- Allows multiple subscribers (`ListingsPage`, `ChatSearchPage`) to attach `.then()` handlers to the same in-flight Promise without duplicate network calls.
+- Catches API errors gracefully so components fall back cleanly to manual fetching.
 
 ---
 

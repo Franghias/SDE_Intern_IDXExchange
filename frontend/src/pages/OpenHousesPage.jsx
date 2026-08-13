@@ -5,6 +5,8 @@ import enUS from 'date-fns/locale/en-US';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { fetchAllOpenHouses } from '../api/propertyApi';
 import { formatPrice, formatTime, formatDate } from '../utils/format';
+import { useFavorites } from '../hooks/useFavorites';
+import { prefetchPromises } from '../utils/prefetchCache';
 import ChatAssistant from '../components/ChatAssistant';
 import PropertyFilters, { INITIAL_FILTERS } from '../components/PropertyFilters';
 import SortControls from '../components/SortControls';
@@ -51,6 +53,8 @@ function OpenHousesPage() {
   const [changedFields, setChangedFields] = useState([]);
 
   const totalPages = Math.ceil(total / itemsPerPage);
+
+  const { isFavorite, toggleFavorite } = useFavorites();
 
   /**
    * Load paginated open houses for the card list.
@@ -118,12 +122,54 @@ function OpenHousesPage() {
     }
   }, []);
 
-  // On mount: only fetch if there is no cached data (first visit).
+  // On mount: await prefetch Promises if available, otherwise fetch.
   // Subsequent visits restore from the module-level cache instead.
   useEffect(() => {
     if (!openHousesCache) {
-      loadOpenHouses(null, 1, itemsPerPage);
-      loadCalendarEvents(calendarDate);
+      if (prefetchPromises.openHousesCards) {
+        setLoading(true);
+        prefetchPromises.openHousesCards.then((cardData) => {
+          if (cardData && cardData.results) {
+            setOpenHouses(cardData.results);
+            setTotal(cardData.total);
+            openHousesCache = {
+              openHouses: cardData.results,
+              total: cardData.total,
+              currentPage: 1,
+              itemsPerPage: 20,
+              sortCriteria: [],
+              activeRange: null,
+              activePropertyFilters: {},
+              filterFormValues: { ...INITIAL_FILTERS },
+              calendarDate: new Date(),
+              dateRange: { start: '', end: '' },
+              calendarSelection: null,
+            };
+          } else {
+            loadOpenHouses(null, 1, itemsPerPage);
+          }
+          setLoading(false);
+        });
+      } else {
+        loadOpenHouses(null, 1, itemsPerPage);
+      }
+
+      if (prefetchPromises.openHousesCalendar) {
+        setCalendarLoading(true);
+        prefetchPromises.openHousesCalendar.then((calData) => {
+          if (calData && calData.results) {
+            setCalendarEvents(calData.results);
+            if (openHousesCache) {
+              openHousesCache.calendarEvents = calData.results;
+            }
+          } else {
+            loadCalendarEvents(calendarDate);
+          }
+          setCalendarLoading(false);
+        });
+      } else {
+        loadCalendarEvents(calendarDate);
+      }
     }
   }, []);
 
@@ -306,12 +352,25 @@ function OpenHousesPage() {
   /**
    * Called by ChatAssistant when the LLM suggests new filter values.
    * Updates both date range and property filter fields visually without triggering a search.
+   * Sort fields (sortBy/sortOrder) are intercepted and converted to sortCriteria.
    */
   function handleChatFiltersChange(newFilters) {
     const changed = [];
 
+    // Extract sort fields from the LLM response first
+    const { sortBy, sortOrder, ...remainingFields } = newFilters;
+
+    // Convert LLM sort response to sortCriteria array if present
+    if (sortBy) {
+      const newCriteria = [{ field: sortBy, order: sortOrder || 'asc' }];
+      setSortCriteria(newCriteria);
+      if (openHousesCache) openHousesCache.sortCriteria = newCriteria;
+      changed.push('sortBy');
+    }
+    if (sortOrder) changed.push('sortOrder');
+
     // Separate date range fields from property filter fields
-    const { startDate, endDate, ...propertyFields } = newFilters;
+    const { startDate, endDate, ...propertyFields } = remainingFields;
 
     // Update date range if chatbot suggested dates
     if (startDate !== undefined || endDate !== undefined) {
@@ -638,6 +697,20 @@ function OpenHousesPage() {
                     <span className={`oh-card__status-badge oh-card__status-badge--${oh.status}`}>
                       {oh.status}
                     </span>
+                    {oh.propertyId && (
+                      <button
+                        className={`oh-card__favorite-btn${isFavorite(oh.propertyId) ? ' oh-card__favorite-btn--active' : ''}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          toggleFavorite(oh.propertyId);
+                        }}
+                        aria-label={isFavorite(oh.propertyId) ? 'Remove from favorites' : 'Add to favorites'}
+                        title={isFavorite(oh.propertyId) ? 'Remove from favorites' : 'Add to favorites'}
+                      >
+                        {isFavorite(oh.propertyId) ? '♥' : '♡'}
+                      </button>
+                    )}
                   </div>
 
                   <div className="oh-card__body">

@@ -118,7 +118,7 @@ IDXExchange/
 │   │   ├── api/              # API client (propertyApi, chatApi)
 │   │   ├── hooks/            # useFavorites hook (localStorage + cross-tab sync)
 │   │   ├── utils/            # parsePhotos, formatPrice, formatTime, formatDate
-│   │   ├── test/             # Vitest setup + tests (61 tests across 9 suites)
+│   │   ├── test/             # Vitest setup + tests (67 tests across 10 suites)
 │   │   ├── stylesheets/      # All CSS (index, App, Sidebar, IntroductionPage, PropertyCard,
 │   │   │                     #   PropertyFilters, SortControls, ChatAssistant, ListingsPage, ChatSearchPage,
 │   │   │                     #   FavoritesPage, OpenHousesPage, Pagination, PropertyDetailPage,
@@ -234,7 +234,7 @@ npm test
 # Query Performance & EXPLAIN Benchmark Suite
 npm run perf
 
-# Frontend tests (61 Vitest tests across 9 suites)
+# Frontend tests (67 Vitest tests across 10 suites)
 cd frontend
 ```
 

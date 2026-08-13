@@ -526,6 +526,38 @@
   color: #fff;
 }
 
+/* Favorite heart button */
+.oh-card__favorite-btn {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3;
+  transition: transform 0.2s ease, background 0.2s ease;
+  line-height: 1;
+  padding: 0;
+}
+
+.oh-card__favorite-btn:hover {
+  transform: scale(1.15);
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.oh-card__favorite-btn--active {
+  color: #ef4444;
+  background: rgba(0, 0, 0, 0.55);
+}
+
 /* Body */
 .oh-card__body {
   padding: 16px 20px 20px;

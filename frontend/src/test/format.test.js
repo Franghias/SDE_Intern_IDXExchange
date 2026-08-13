@@ -37,5 +37,13 @@ describe('format utils', () => {
       expect(parsePhotos('["http://example.com/1.jpg"]')).toEqual(['http://example.com/1.jpg']);
       expect(parsePhotos('invalid')).toEqual([]);
     });
+
+    it('filters out 404 error payloads and Media record not found messages', () => {
+      const payload404 = JSON.stringify([
+        'http://example.com/good.jpg',
+        '{"code":"404","message":"Media record not found!"}'
+      ]);
+      expect(parsePhotos(payload404)).toEqual(['http://example.com/good.jpg']);
+    });
   });
 });

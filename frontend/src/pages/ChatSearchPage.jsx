@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { fetchProperties } from '../api/propertyApi';
 import { useFavorites } from '../hooks/useFavorites';
+import { prefetchPromises } from '../utils/prefetchCache';
 import ChatAssistant from '../components/ChatAssistant';
 import PropertyCard from '../components/PropertyCard';
 import Pagination from '../components/Pagination';
@@ -80,10 +81,30 @@ function ChatSearchPage() {
     }
   }, []);
 
-  // On mount: fetch if no cache exists
+  // On mount: await prefetch Promise if available, otherwise fetch
   useEffect(() => {
     if (!chatSearchCache) {
-      loadProperties({}, 1, itemsPerPage);
+      if (prefetchPromises.listings) {
+        setLoading(true);
+        prefetchPromises.listings.then((data) => {
+          if (data && data.results) {
+            setProperties(data.results);
+            setTotal(data.total);
+            chatSearchCache = {
+              properties: data.results,
+              total: data.total,
+              activeFilters: { ...INITIAL_CHAT_FILTERS },
+              currentPage: 1,
+              itemsPerPage: 20,
+            };
+          } else {
+            loadProperties({}, 1, itemsPerPage);
+          }
+          setLoading(false);
+        });
+      } else {
+        loadProperties({}, 1, itemsPerPage);
+      }
     }
   }, [itemsPerPage, loadProperties]);
 

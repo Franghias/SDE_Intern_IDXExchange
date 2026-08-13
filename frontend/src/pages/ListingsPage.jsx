@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { fetchProperties } from '../api/propertyApi';
 import { useFavorites } from '../hooks/useFavorites';
+import { prefetchPromises } from '../utils/prefetchCache';
 import ChatAssistant from '../components/ChatAssistant';
 import PropertyFilters, { INITIAL_FILTERS } from '../components/PropertyFilters';
 import PropertyCard from '../components/PropertyCard';
@@ -66,11 +67,33 @@ function ListingsPage() {
     }
   }, []);
 
-  // On mount: only fetch if there is no cached data (first visit).
+  // On mount: await prefetch Promise if available, otherwise fetch.
   // Subsequent visits restore from the module-level cache instead.
   useEffect(() => {
     if (!listingsCache) {
-      loadProperties({}, 1, itemsPerPage, sortCriteria);
+      if (prefetchPromises.listings) {
+        setLoading(true);
+        prefetchPromises.listings.then((data) => {
+          if (data && data.results) {
+            setProperties(data.results);
+            setTotal(data.total);
+            listingsCache = {
+              properties: data.results,
+              total: data.total,
+              activeFilters: {},
+              currentPage: 1,
+              itemsPerPage: 20,
+              sortCriteria: [],
+              filterFormValues: { ...INITIAL_FILTERS },
+            };
+          } else {
+            loadProperties({}, 1, itemsPerPage, sortCriteria);
+          }
+          setLoading(false);
+        });
+      } else {
+        loadProperties({}, 1, itemsPerPage, sortCriteria);
+      }
     }
   }, []);
 
@@ -113,18 +136,32 @@ function ListingsPage() {
   /**
    * Called by ChatAssistant when the LLM suggests new filter values.
    * Updates the form fields visually without triggering a search.
+   * Sort fields (sortBy/sortOrder) are intercepted and converted to sortCriteria.
    */
   function handleChatFiltersChange(newFilters) {
+    // Extract sort fields from the LLM response before processing filter fields
+    const { sortBy, sortOrder, ...filterFields } = newFilters;
+
+    // Convert LLM sort response to sortCriteria array if present
+    if (sortBy) {
+      const newCriteria = [{ field: sortBy, order: sortOrder || 'asc' }];
+      setSortCriteria(newCriteria);
+      if (listingsCache) listingsCache.sortCriteria = newCriteria;
+    }
+
     // Track which fields changed for highlight animation
     const changed = [];
-    for (const key of Object.keys(newFilters)) {
-      if (newFilters[key] !== filterFormValues[key]) {
+    for (const key of Object.keys(filterFields)) {
+      if (filterFields[key] !== filterFormValues[key]) {
         changed.push(key);
       }
     }
+    if (sortBy) changed.push('sortBy');
+    if (sortOrder) changed.push('sortOrder');
+
     setChangedFields(changed);
-    setFilterFormValues(newFilters);
-    if (listingsCache) listingsCache.filterFormValues = newFilters;
+    setFilterFormValues(filterFields);
+    if (listingsCache) listingsCache.filterFormValues = filterFields;
 
     // Clear highlights after delay
     if (changed.length > 0) {

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import '../stylesheets/SortControls.css';
 
 /**
@@ -38,7 +38,7 @@ const DIRECTIONS = {
  *   onChange(newCriteria) - called with updated array when user clicks Sort or Clear
  */
 function SortControls({ sortCriteria, onChange }) {
-  // Build initial local state from current sortCriteria
+  // Build local state from current sortCriteria
   function buildSelections() {
     const selections = {};
     for (const f of SORT_FIELDS) {
@@ -49,6 +49,12 @@ function SortControls({ sortCriteria, onChange }) {
   }
 
   const [selections, setSelections] = useState(buildSelections);
+
+  // Resync local dropdown selections when sortCriteria changes externally
+  // (e.g. LLM-triggered sort, or programmatic clear)
+  useEffect(() => {
+    setSelections(buildSelections());
+  }, [sortCriteria]);
 
   function handleDirectionChange(field, order) {
     setSelections((prev) => ({ ...prev, [field]: order }));

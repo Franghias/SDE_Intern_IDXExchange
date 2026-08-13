@@ -594,3 +594,26 @@
 **Decision: Main Content Canvas Placement for `ErrorBoundary` in `App.jsx`**
 - In `App.jsx`, placed `<ErrorBoundary>` inside `<main className="app-content">` wrapping `<Routes>`.
 - Preserves the fixed `<Sidebar>` navigation bar even if an uncaught render error occurs on a specific route view, allowing users to safely navigate back to other views (e.g. from a failing Property Detail back to Search).
+
+#### 2026-08-11 — LLM Sort Sync, Favorites Badge Consistency & Initial Page Data Pre-Caching
+
+**Decision: Intercept `sortBy` & `sortOrder` in `handleChatFiltersChange` and `useEffect` Sync in `SortControls`**
+- The LLM returns flat filter keys `{ sortBy: "price", sortOrder: "asc" }`, whereas `SortControls` and the backend query builders expect array structures `sortCriteria: [{ field: "price", order: "asc" }]`.
+- Intercepted `sortBy` and `sortOrder` in `handleChatFiltersChange` across `ListingsPage`, `FavoritesPage`, `OpenHousesPage`, and `ChatSearchPage` to convert them into `sortCriteria` arrays and update state.
+- Added a `useEffect` inside `SortControls.jsx` listening to `sortCriteria` changes so local dropdown selections resync visually when the LLM modifies sorting.
+
+**Decision: Custom In-Tab DOM Event `favoritesUpdated` for Badge Sync (`useFavorites.js`)**
+- Browser `storage` events only fire across separate browser tabs/windows when `localStorage` is mutated, leaving in-tab component state (such as the `<Sidebar>` badge on the Favorites page) out of sync when a favorite is toggled.
+- Added `window.dispatchEvent(new CustomEvent('favoritesUpdated'))` in `writeFavorites()`.
+- Added a listener for `favoritesUpdated` in `useFavorites.js` alongside the `storage` event listener, enabling instant same-tab badge synchronization without unnecessary component coupling.
+
+**Decision: Promise-Based Startup Pre-Caching Strategy (`prefetchCache.js` & `main.jsx`)**
+- Fired initial default REST requests (`GET /api/properties?limit=20&offset=0`, `POST /api/properties/favorites?limit=20&offset=0`, `GET /api/openhouses?limit=20&offset=0`, and `GET /api/openhouses?limit=500...`) in parallel in `prefetchCache.js` before React renders in `main.jsx`.
+- Stored active `Promise` instances (`prefetchPromises`) instead of plain response data to solve race conditions: if a user navigates to `ListingsPage` or `ChatSearchPage` while the 11-second properties query is still in-flight, the component attaches a `.then()` listener to the active Promise rather than triggering a duplicate 11-second backend fetch.
+- Preserved `prefetchPromises` so multiple pages (e.g. both `ListingsPage` and `ChatSearchPage`) can attach listeners to and consume the same initial prefetched response cleanly.
+
+**Decision: Dual Parse-Time and Runtime `onError` 404 Image Filtering (`PropertyImageGallery.jsx`, `PropertyImageCarousel.jsx`, `format.js`)**
+- External image CDN servers sometimes return HTTP 404 with JSON bodies like `{"code":"404","message":"Media record not found!"}` instead of image data.
+- Handled this at two layers:
+  1. **Parse-time filter (`parsePhotos`)**: Filters out string items containing `"code":"404"` or `"Media record not found!"` when parsing JSON photo arrays.
+  2. **Runtime `onError` filter (`PropertyImageGallery.jsx` & `PropertyImageCarousel.jsx`)**: Added `onError={() => handleImageError(url)}` handlers to main gallery images, thumbnails, lightbox images, and card carousel images. Failed URLs are added to `failedPhotos` state and filtered out from `validPhotos`, cleanly recalculating photo indexes and falling back to `PLACEHOLDER_IMG` ('No Photo') if all images fail.

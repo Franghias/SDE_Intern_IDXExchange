@@ -6,7 +6,15 @@ export function parsePhotos(photosStr) {
   if (!photosStr) return [];
   try {
     const parsed = JSON.parse(photosStr);
-    return Array.isArray(parsed) ? parsed : [];
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((item) => {
+      if (typeof item !== 'string') return false;
+      // Filter out 404 error payloads or "Media record not found" response strings
+      if (item.includes('"code":"404"') || item.includes('"code": "404"') || item.includes('Media record not found')) {
+        return false;
+      }
+      return item.trim().length > 0;
+    });
   } catch {
     return [];
   }

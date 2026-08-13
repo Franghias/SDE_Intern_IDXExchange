@@ -18,12 +18,11 @@ frontend/
 │   │   └── chatApi.js                # Chat API client (sendChatMessage)
 │   ├── hooks/
 │   │   └── useFavorites.js           # Favorites hook — localStorage + cross-tab sync
-│   ├── utils/
-│   │   └── format.js                 # parsePhotos(), formatPrice(), formatTime(), formatDate()
-│   ├── test/
+│   ├�│   ├── test/
 │   │   ├── ChatSearchPage.test.jsx   # Dedicated Chat Search Page tests (7 tests)
 │   │   ├── ErrorBoundary.test.jsx    # React Error Boundary & recovery UI tests (8 tests)
 │   │   ├── format.test.js            # Format utility tests (formatDate, formatPrice, formatTime, parsePhotos) (6 tests)
+│   │   ├── heartFavorite.test.jsx    # Heart favorite component tests across all pages (6 tests)
 │   │   ├── openHousesApi.test.js     # Open Houses API tests (6 tests)
 │   │   ├── Pagination.test.jsx       # Pagination tests (14 tests)
 │   │   ├── propertyApi.test.js       # Property API tests (4 tests)
@@ -32,9 +31,9 @@ frontend/
 │   │   ├── useFavorites.test.js      # useFavorites hook tests (5 tests)
 │   │   └── setup.js                  # Vitest setup — loads jest-dom matchers
 │   ├── stylesheets/                  # CSS stylesheets (index, App, Sidebar, IntroductionPage,
-│   │                                 # PropertyCard, PropertyFilters, SortControls, ChatAssistant, ListingsPage, ChatSearchPage,
-│   │                                 # FavoritesPage, OpenHousesPage, Pagination, PropertyDetailPage,
-│   │                                 # PropertyImageCarousel, PropertyImageGallery, PropertyMap, ErrorBoundary)
+│                                     # PropertyCard, PropertyFilters, SortControls, ChatAssistant, ListingsPage, ChatSearchPage,
+│                                     # FavoritesPage, OpenHousesPage, Pagination, PropertyDetailPage,
+│                                     # PropertyImageCarousel, PropertyImageGallery, PropertyMap, ErrorBoundary)
 │   ├── components/
 │   │   ├── Sidebar.jsx               # Navigation bar with live favorite count badge & AI Search link
 │   │   ├── PropertyCard.jsx          # Card with image carousel, badges, and favorite heart button
@@ -64,7 +63,7 @@ npm install
 # Start dev server (port 3000)
 npm run dev
 
-# Run tests (Vitest — 61 tests across 9 suites)
+# Run tests (Vitest — 67 tests across 10 suites)
 npm test
 
 # Build for production
@@ -76,9 +75,13 @@ npm run build
 | `ErrorBoundary.test.jsx` | 8 | Render safe child, catch render crash, recovery UI ("Try Again", "Reload", "Home"), callbacks, custom fallbacks, stack trace toggle |
 | `ChatSearchPage.test.jsx` | 7 | Render, auto API fetch, sorting, empty/error retry, conversational non-filter message guard |
 | `format.test.js` | 6 | Dynamic timezone local date parsing, price formatting, time formatting, photo JSON parsing |
+| `heartFavorite.test.jsx` | 6 | Heart favorite component tests across PropertyCard, OpenHousesPage, PropertyDetailPage, ListingsPage, and FavoritesPage |
 | `openHousesApi.test.js` | 6 | URL construction with startDate/endDate, limit/offset, error handling, empty string exclusion |
 | `propertyApi.test.js` | 4 | URL construction, filter inclusion, network errors, server errors |
 | `PropertyFilters.test.jsx` | 4 | Renders inputs, onSearch values, empty exclusion, onClear reset |
+| `Pagination.test.jsx` | 14 | Page numbers, disabled prev/next, page click, ellipsis, hidden when ≤1 page, aria-current |
+| `SortControls.test.jsx` | 7 | Render fields, order selection, onChange callback, tags, remove, clear, hide used |
+| `useFavorites.test.js` | 5 | Empty initial, toggle add/remove, localStorage persistence, clearFavorites, cross-tab sync |Renders inputs, onSearch values, empty exclusion, onClear reset |
 | `Pagination.test.jsx` | 14 | Page numbers, disabled prev/next, page click, ellipsis, hidden when ≤1 page, aria-current |
 | `SortControls.test.jsx` | 7 | Render fields, order selection, onChange callback, tags, remove, clear, hide used |
 | `useFavorites.test.js` | 5 | Empty initial, toggle add/remove, localStorage persistence, clearFavorites, cross-tab sync |

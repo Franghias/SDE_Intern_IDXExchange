@@ -1,5 +1,11 @@
 ### This file is where you update changes you make to the project. Remember to also write down tasks from which week, dates, file paths, and any other relevant information. 
 
+#### 2026-08-13 — Favorite Heart Component & heartFavorite.test.jsx
+- Added heart favorite toggle button component to open house cards in `OpenHousesPage.jsx` and styled in `OpenHousesPage.css`.
+- Renamed and expanded test suite `OpenHousesPage.test.jsx` into `heartFavorite.test.jsx` to test all heart favorite components across all pages (`PropertyCard`, `OpenHousesPage`, `PropertyDetailPage`, `ListingsPage`, and `FavoritesPage`).
+- Updated documentation in `frontend/README.md`, `README.md`, and `docs/change_log.md`.
+- Files: `frontend/src/pages/OpenHousesPage.jsx`, `frontend/src/stylesheets/OpenHousesPage.css`, `frontend/src/test/heartFavorite.test.jsx`, `frontend/src/test/setup.js`, `frontend/README.md`, `README.md`, `docs/change_log.md`.
+
 #### 2026-06-23 — Week 1: Setup Database
 - Created `.env.example` with MySQL credentials (MYSQL_ROOT_PASSWORD, MYSQL_DATABASE, MYSQL_PORT)
 - Created `.env` from `.env.example` for local development
@@ -492,8 +498,20 @@
   - All 61 frontend tests across 9 test suites pass cleanly via `npm test`.
 - Files: `backend/src/middleware/requestLogger.js`, `backend/tests/requestLogger.test.js`, `frontend/src/components/ErrorBoundary.jsx`, `frontend/src/stylesheets/ErrorBoundary.css`, `frontend/src/App.jsx`, `frontend/src/test/ErrorBoundary.test.jsx`, `docs/decision_log.md`, `docs/change_log.md`
 
-
-
-
-
+#### 2026-08-11 — LLM Sort Sync, Favorites Badge Consistency & Initial Page Data Pre-Caching
+- **Frontend — SortControls LLM Synchronization (`frontend/src/components/SortControls.jsx`, `frontend/src/pages/ListingsPage.jsx`, `frontend/src/pages/FavoritesPage.jsx`, `frontend/src/pages/OpenHousesPage.jsx`):**
+  - Added `useEffect` in `SortControls` to resync local direction dropdown selections whenever the `sortCriteria` prop changes externally.
+  - Updated `handleChatFiltersChange` in `ListingsPage`, `FavoritesPage`, `OpenHousesPage`, and `ChatSearchPage` to intercept flat `sortBy` and `sortOrder` values returned by the LLM, convert them to `sortCriteria` arrays, and trigger frontend UI and filter state updates automatically.
+- **Frontend — Same-Tab Favorites Badge Consistency (`frontend/src/hooks/useFavorites.js`):**
+  - Added custom `favoritesUpdated` event dispatch to `writeFavorites()` in `useFavorites.js`.
+  - Added a listener for `favoritesUpdated` alongside the existing cross-tab `storage` event listener, ensuring all `useFavorites()` instances in the same tab (e.g. Sidebar badge on the Favorites page) update state immediately when a favorite is added or removed.
+- **Frontend — Initial Page Data Pre-Caching & Promise-Based Hydration (`frontend/src/utils/prefetchCache.js`, `frontend/src/main.jsx`, `frontend/src/pages/ListingsPage.jsx`, `frontend/src/pages/FavoritesPage.jsx`, `frontend/src/pages/OpenHousesPage.jsx`, `frontend/src/pages/ChatSearchPage.jsx`):**
+  - Created `prefetchCache.js` utility exporting `prefetchPromises` that fires the 4 default initial API endpoints (`GET /api/properties?limit=20&offset=0`, `POST /api/properties/favorites?limit=20&offset=0`, `GET /api/openhouses?limit=20&offset=0`, `GET /api/openhouses?limit=500...`) in parallel at app startup before React renders in `main.jsx`.
+  - Stored active `Promise` objects in `prefetchPromises` (rather than plain data objects), eliminating race conditions when navigating to `ListingsPage` or `ChatSearchPage` while initial prefetching is still in-flight.
+  - Page components attach `.then()` handlers to `prefetchPromises`, awaiting in-flight startup requests without triggering duplicate backend queries and allowing multiple pages to share the initial prefetched dataset cleanly.
+- **Frontend — 404 Media Record Image Filtering (`frontend/src/components/PropertyImageGallery.jsx`, `frontend/src/components/PropertyImageCarousel.jsx`, `frontend/src/utils/format.js`):**
+  - Updated `parsePhotos` in `format.js` to filter out 404 error response JSON objects and `"Media record not found!"` payload strings during array parsing.
+  - Added dynamic `onError` image loading failure tracking (`failedPhotos` state) in `PropertyImageGallery.jsx` and `PropertyImageCarousel.jsx` so that any image URLs returning HTTP 404 status or failing to render are automatically filtered out from `validPhotos`, preventing broken media messages or 404 error cards from displaying to users.
+  - All 66 frontend unit tests across 10 test suites pass cleanly via `npm test`.
+- Files: `frontend/src/components/PropertyImageGallery.jsx`, `frontend/src/components/PropertyImageCarousel.jsx`, `frontend/src/utils/format.js`, `frontend/src/test/format.test.js`, `docs/decision_log.md`, `docs/change_log.md`
 
