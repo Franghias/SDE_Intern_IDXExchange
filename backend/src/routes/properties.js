@@ -1,5 +1,6 @@
 const express = require('express');
 const pool = require('../config/db');
+const logger = require('../utils/logger');
 
 const router = express.Router();
 
@@ -324,7 +325,7 @@ router.get('/', async (req, res) => {
       results,
     });
   } catch (err) {
-    console.error('Properties query failed:', err.message);
+    logger.error('Properties query failed', err);
     res.status(500).json({
       status: 'error',
       message: 'Failed to fetch properties',
@@ -471,7 +472,7 @@ router.post('/favorites', async (req, res) => {
       results,
     });
   } catch (err) {
-    console.error('Favorites query failed:', err.message);
+    logger.error('Favorites query failed', err);
     res.status(500).json({
       status: 'error',
       message: 'Failed to fetch favorite properties',
@@ -559,7 +560,7 @@ router.get('/:id/openhouses', async (req, res) => {
 
     res.json({ listingId: id, openHouses });
   } catch (err) {
-    console.error('Open houses query failed:', err.message);
+    logger.error('Open houses query failed', err);
     res.status(500).json({
       status: 'error',
       message: 'Failed to fetch open houses',
@@ -598,7 +599,7 @@ router.get('/:id', async (req, res) => {
 
     res.json(rows[0]);
   } catch (err) {
-    console.error('Property detail query failed:', err.message);
+    logger.error('Property detail query failed', err);
     res.status(500).json({
       status: 'error',
       message: 'Failed to fetch property',

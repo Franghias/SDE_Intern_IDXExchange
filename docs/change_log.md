@@ -536,4 +536,42 @@
 - **LLM Context Isolation**: Prevents stale filter values from being passed in `CURRENT FILTER VALUES` within the LLM system prompt when starting a fresh conversation after clearing chat history.
 - **Files**: `frontend/src/components/ChatAssistant.jsx`, `docs/change_log.md`, `docs/decision_log.md`.
 
+#### 2026-08-17 — Log Sanitization & Pre-Cloud Deployment Security Hardening
+- **Backend — Created `backend/src/utils/logger.js`:**
+  - Zero-dependency logging utility with `info()`, `warn()`, `error()` log-level functions.
+  - Built-in `redactUrl()` function that masks sensitive query-string parameter values (token, key, secret, password, auth, authorization, api_key, apikey, access_token, refresh_token, email, ssn, credential) as `[REDACTED]` before writing to stdout.
+  - Built-in `sanitizeError()` helper that returns a generic safe error message suitable for HTTP responses, preventing stack traces and internal details from leaking to clients.
+- **Backend — Updated `backend/src/middleware/requestLogger.js`:**
+  - Integrated `redactUrl()` from `logger.js` into the HTTP access log middleware.
+  - Sensitive query-string parameters (e.g. `?token=abc123`) are now automatically masked in all access logs.
+- **Backend — Updated `backend/src/routes/health.js`:**
+  - Replaced `console.error('Health check failed:', err.message)` with `logger.error('Health check failed', err)`.
+  - Removed raw `err.message` from 500 error HTTP responses to prevent database hostname, port, and driver details from leaking. Now returns generic `{ status: "error", message: "Database connection unavailable" }`.
+  - Fixed missing `return` before second `res.status(500)` call that could cause "headers already sent" crashes.
+- **Backend — Updated `backend/src/routes/chat.js`:**
+  - Replaced `console.error` and `console.warn` calls with `logger.error` and `logger.warn`.
+  - Removed raw OpenRouter `errorBody` from error logs to prevent leaking external API response bodies.
+  - Changed missing LLM_API_KEY error from 500 → 503 with generic client message (`"Chat service is currently unavailable."`) instead of exposing backend `.env` configuration instructions.
+  - Sanitized LLM non-JSON response warning to not log raw prompt/response content.
+- **Backend — Updated `backend/src/routes/properties.js` & `backend/src/routes/openhouses.js`:**
+  - Replaced all `console.error` calls with `logger.error` for consistent structured logging.
+- **Backend — Updated `backend/src/server.js`:**
+  - Replaced `console.log` startup message with `logger.info`.
+  - Changed log from `Server running on http://localhost:${PORT}` to `Server running on port ${PORT}` to avoid exposing internal hostname/URL.
+- **Frontend — Updated `frontend/src/components/ErrorBoundary.jsx`:**
+  - Error summary (`error.message`) and technical details toggle (stack trace, component stack) are now conditionally rendered only in development mode (`!import.meta.env.PROD`).
+  - `console.error` of full error details is suppressed in production builds.
+- **Security — Updated `.gitignore`:**
+  - Extended environment variable exclusions to cover `.env.local`, `frontend/.env`, and `frontend/.env.local` in addition to existing entries.
+- **Security — Sanitized `backend/.env`:**
+  - Replaced live OpenRouter API key (`sk-or-v1-...`) with placeholder `your_openrouter_api_key_here` to prevent credential leakage via version control.
+- **Tests — Updated `backend/tests/health.test.js`:**
+  - Updated 2 test cases to expect sanitized generic error messages (`"Database connection unavailable"`) instead of raw `err.message` values (`"ECONNREFUSED"`, `"Connection lost"`).
+- **Tests — Updated `backend/tests/requestLogger.test.js`:**
+  - Added 3 new test cases verifying URL query parameter redaction: sensitive params are masked, non-sensitive params are preserved, and URLs without query strings are not modified.
+- **Test Results:**
+  - Backend: 90 passed, 1 failed (pre-existing: MySQL not running locally for health 200 test). All new/updated tests pass.
+  - Frontend: 76 passed, 0 failed. All test suites pass.
+- **Files**: `backend/src/utils/logger.js`, `backend/src/middleware/requestLogger.js`, `backend/src/routes/health.js`, `backend/src/routes/chat.js`, `backend/src/routes/properties.js`, `backend/src/routes/openhouses.js`, `backend/src/server.js`, `frontend/src/components/ErrorBoundary.jsx`, `frontend/vercel.json`, `.gitignore`, `backend/.env`, `backend/tests/health.test.js`, `backend/tests/requestLogger.test.js`, `docs/LOCAL_RUN_GUIDE.md`, `docs/CLOUD_DEPLOYMENT_GUIDE.md`, `docs/FILE_GUIDE.md`, `docs/change_log.md`, `docs/decision_log.md`.
+
 

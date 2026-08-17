@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 
+const logger = require('../utils/logger');
+
 const LLM_API_KEY = process.env.LLM_API_KEY;
 const LLM_MODEL = process.env.LLM_MODEL || 'inclusionai/ling-3.0-flash:free';
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
@@ -138,8 +140,9 @@ router.post('/', async (req, res) => {
     }
 
     if (!LLM_API_KEY || LLM_API_KEY === 'your_openrouter_api_key_here') {
-      return res.status(500).json({
-        error: 'LLM API key is not configured. Please set LLM_API_KEY in the backend .env file.',
+      logger.error('LLM API key is not configured');
+      return res.status(503).json({
+        error: 'Chat service is currently unavailable. Please try again later.',
       });
     }
 
@@ -169,10 +172,9 @@ router.post('/', async (req, res) => {
     });
 
     if (!response.ok) {
-      const errorBody = await response.text();
-      console.error(`OpenRouter API error (${response.status}):`, errorBody);
+      logger.error(`OpenRouter API error (${response.status})`);
       return res.status(502).json({
-        error: `LLM service returned an error (${response.status}). Please try again later.`,
+        error: 'Chat service encountered an error. Please try again later.',
       });
     }
 
@@ -191,7 +193,7 @@ router.post('/', async (req, res) => {
       parsed = JSON.parse(cleaned);
     } catch {
       // If the LLM didn't return valid JSON, wrap its text as a message-only response
-      console.warn('LLM returned non-JSON response:', rawContent);
+      logger.warn('LLM returned non-JSON response');
       parsed = { message: rawContent, filters: {} };
     }
 
@@ -200,7 +202,7 @@ router.post('/', async (req, res) => {
       filters: parsed.filters || {},
     });
   } catch (err) {
-    console.error('Chat endpoint error:', err);
+    logger.error('Chat endpoint error', err);
     res.status(500).json({ error: 'Internal server error while processing chat request.' });
   }
 });

@@ -140,13 +140,23 @@ docker exec -i idx-mysql-local mysql -uroot -prootpassword rets < database/03_ad
 ---
 
 ### `backend/src/config/db.js`
-**What it does:** Creates and exports a **MySQL connection pool** using the `mysql2/promise` library.
+**What it does:** Creates and exports the MySQL database connection pool using `mysql2/promise`.
 
 **How it works:**
-- Reads `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_PORT` from `process.env`.
-- Creates a pool with `connectionLimit: 10` — meaning up to 10 simultaneous database connections.
-- `waitForConnections: true` — if all 10 connections are busy, new queries wait in a queue instead of failing.
-- Exports the pool. Every route handler imports this pool and calls `pool.query(sql, params)` to run parameterized queries (prevents SQL injection).
+- Reads connection settings from environment variables (`DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_PORT`).
+- Sets `connectionLimit: 10` — allows up to 10 simultaneous database connections.
+- Sets `waitForConnections: true` — queries will wait in line if all 10 connections are busy, rather than failing immediately.
+- Used by all route files (`health.js`, `properties.js`, `openhouses.js`) to run database queries via `pool.query()`.
+
+---
+
+### `backend/src/utils/logger.js`
+**What it does:** Zero-dependency logging utility with built-in URL parameter redaction and HTTP error sanitization.
+
+**How it works:**
+- `info(msg)`, `warn(msg)`, `error(msg, err)` — ISO-timestamped log output functions.
+- `redactUrl(url)` — automatically masks sensitive query parameters (token, key, secret, password, auth, email, ssn, etc.) as `[REDACTED]` before writing to stdout.
+- `sanitizeError(err)` — strips stack traces and database internal details before returning safe error messages to callers.
 
 ---
 
@@ -900,6 +910,21 @@ All frontend tests use **Vitest** + **React Testing Library** + **@testing-libra
 
 ### `docs/FLOW.md`
 **What it does:** Detailed data flow documentation covering navigation flow, page specifications, user flows for each page, and the API communication architecture.
+
+---
+
+### `docs/LOCAL_RUN_GUIDE.md`
+**What it does:** Comprehensive guide detailing how to run IDXExchange locally in Development vs Production modes, step-by-step verification procedures, and log sanitization explanations.
+
+---
+
+### `docs/CLOUD_DEPLOYMENT_GUIDE.md`
+**What it does:** Detailed step-by-step guide for deploying IDXExchange to a free cloud stack: Railway (MySQL database migration), Render (Express backend service), and Vercel (React frontend SPA).
+
+---
+
+### `frontend/vercel.json`
+**What it does:** Vercel deployment configuration file handling API rewrites (`/api/*` $\rightarrow$ Render backend URL) and SPA client-side routing fallback (`/*` $\rightarrow$ `/index.html`).
 
 ---
 

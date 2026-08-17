@@ -39,7 +39,7 @@ describe('Week 2 — GET /api/health', () => {
     expect(res.headers['content-type']).toMatch(/application\/json/);
   });
 
-  test('returns 500 with status "error" when database is unreachable and error message (ECONNREFUSED)', async () => {
+  test('returns 500 with status "error" when database is unreachable (sanitized message)', async () => {
     // Temporarily replace the pool's query method to simulate a DB failure
     const originalQuery = pool.query.bind(pool);
     pool.query = jest.fn().mockRejectedValue(new Error('ECONNREFUSED'));
@@ -49,15 +49,14 @@ describe('Week 2 — GET /api/health', () => {
     expect(res.status).toBe(500);
     expect(res.body).toEqual({
       status: 'error',
-      database: 'database unreachable',
-      message: 'ECONNREFUSED',
+      message: 'Database connection unavailable',
     });
 
     // Restore original query method
     pool.query = originalQuery;
   });
 
-  test('500 response includes an error message (does not crash)', async () => {
+  test('500 response includes sanitized error message (does not crash or leak internals)', async () => {
     const originalQuery = pool.query.bind(pool);
     pool.query = jest.fn().mockRejectedValue(new Error('Connection lost'));
 
@@ -65,7 +64,8 @@ describe('Week 2 — GET /api/health', () => {
 
     // Server is still alive — it returned a proper JSON response, not a crash
     expect(res.status).toBe(500);
-    expect(res.body.message).toBe('Connection lost');
+    // Must NOT expose the raw error message 'Connection lost'
+    expect(res.body.message).toBe('Database connection unavailable');
     expect(res.headers['content-type']).toMatch(/application\/json/);
 
     pool.query = originalQuery;

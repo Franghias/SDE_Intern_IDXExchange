@@ -1,5 +1,6 @@
 const express = require('express');
 const pool = require('../config/db');
+const logger = require('../utils/logger');
 
 const router = express.Router();
 
@@ -333,7 +334,7 @@ router.get('/', async (req, res) => {
 
     res.json({ total, limit, offset, results });
   } catch (err) {
-    console.error('Open houses query failed:', err.message);
+    logger.error('Open houses query failed', err);
     res.status(500).json({
       status: 'error',
       message: 'Failed to fetch open houses',

@@ -641,3 +641,39 @@
 - Updated `handleClearChat()` in `ChatAssistant.jsx` to call `onFiltersChange(getResetFilters(pageContext, filters))`.
 - Clears active filter fields on the page so that `CURRENT FILTER VALUES` passed in the backend system prompt (`buildSystemPrompt`) resets to empty `{}`.
 - Guarantees complete context isolation: starting a new conversation after clearing chat contains zero residual filter context from the previous chat session.
+
+#### 2026-08-17 — Log Sanitization & Pre-Cloud Deployment Security Hardening
+
+**Decision: Lightweight logger utility with built-in sensitive-value redaction (`backend/src/utils/logger.js`)**
+- Created a single focused utility module instead of introducing a third-party logging library (e.g. winston, pino), following Ponytail principles: prefer standard libraries, avoid unnecessary dependencies, keep functions short and focused.
+- `redactUrl()` uses a regex-based key matcher (`SENSITIVE_KEYS`) to mask query-string values for common secret patterns (key, token, secret, password, auth, authorization, api_key, apikey, access_token, refresh_token, email, ssn, credential) as `[REDACTED]`.
+- `sanitizeError()` returns a generic safe message for HTTP responses, ensuring raw Error objects (containing SQL driver details, hostnames, ports, stack traces) never reach the client.
+
+**Decision: Sanitize HTTP access logs via `redactUrl()` in `requestLogger.js`**
+- URLs with sensitive query parameters (e.g. `?token=abc123&page=1`) are automatically masked before being written to stdout, preventing credential leakage in cloud log aggregation services (CloudWatch, Stackdriver, etc.).
+- Non-sensitive parameters (city, limit, offset, sortBy, etc.) remain visible for debugging purposes.
+
+**Decision: Remove raw `err.message` from all HTTP error responses**
+- All route handlers (`health.js`, `chat.js`, `properties.js`, `openhouses.js`) now return generic, safe error messages to clients (e.g. `"Database connection unavailable"`, `"Failed to fetch properties"`) instead of raw `err.message` values that could expose database hostnames, port numbers, SQL driver versions, or connection pool details.
+- Full error details are still logged server-side via `logger.error()` for debugging, but never sent in HTTP response bodies.
+
+**Decision: Hide LLM API key configuration instructions from client responses (`chat.js`)**
+- When `LLM_API_KEY` is missing or set to the placeholder value, the chat endpoint now returns HTTP 503 with `"Chat service is currently unavailable."` instead of HTTP 500 with `"LLM API key is not configured. Please set LLM_API_KEY in the backend .env file."`.
+- Prevents exposing backend `.env` file structure, environment variable names, and configuration instructions to end users.
+
+**Decision: Stop logging raw OpenRouter error response bodies and LLM output content**
+- `chat.js` no longer logs the full `errorBody` from failed OpenRouter API calls or the raw `rawContent` from non-JSON LLM responses.
+- Prevents leaking full prompt contents, API response details, or model output to cloud log streams.
+
+**Decision: Conditionally render ErrorBoundary stack traces based on `import.meta.env.PROD`**
+- In production builds, `error.message`, `error.stack`, and `errorInfo.componentStack` are hidden from end users.
+- The "Show technical details" toggle button is only rendered in development mode.
+- Prevents exposing React component hierarchy, internal file paths, and JavaScript stack traces to end users in production deployments.
+
+**Decision: Sanitize `backend/.env` and extend `.gitignore` for cloud deployment**
+- Replaced the live OpenRouter API key in `backend/.env` with the placeholder value `your_openrouter_api_key_here` to prevent credential leakage if the `.env` file is ever accidentally committed.
+- Extended `.gitignore` to cover `frontend/.env`, `frontend/.env.local`, `backend/.env.local`, and root `.env.local` files.
+
+**Decision: Sanitize server startup log message (`server.js`)**
+- Changed startup log from `Server running on http://localhost:${PORT}` to `Server running on port ${PORT}`.
+- Prevents exposing the internal hostname/URL pattern in cloud log streams, which could aid reconnaissance in cloud environments.

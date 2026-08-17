@@ -1,5 +1,6 @@
 const express = require('express');
 const pool = require('../config/db');
+const logger = require('../utils/logger');
 
 const router = express.Router();
 
@@ -9,19 +10,13 @@ router.get('/', async (req, res) => {
     await pool.query('SELECT 1');
     res.json({ status: 'ok', database: 'database is reachable' });
   } catch (err) {
-    console.error('Health check failed:', err.message);
-    if (err.message == 'ECONNREFUSED') {
-      res.status(500).json({
-        status: 'error',
-        database: 'database unreachable',
-        message: err.message,
-      });
-    }
+    logger.error('Health check failed', err);
     res.status(500).json({
       status: 'error',
-      message: err.message,
+      message: 'Database connection unavailable',
     });
   }
 });
 
 module.exports = router;
+

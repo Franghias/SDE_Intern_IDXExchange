@@ -185,4 +185,47 @@ describe('Request Logging Middleware (backend/src/middleware/requestLogger.js)',
     expect(logSpy).toHaveBeenCalledTimes(1);
     expect(logSpy.mock.calls[0][0]).toMatch(/GET \/api\/fallback-url 200 \d+ms/);
   });
+
+  test('redacts sensitive query parameters (token, key, password, api_key) in access logs', async () => {
+    const app = createTestApp();
+    const res = await request(app).get('/test/fast?token=secret123&api_key=abc&page=1');
+
+    expect(res.status).toBe(200);
+    expect(logSpy).toHaveBeenCalledTimes(1);
+    const logOutput = logSpy.mock.calls[0][0];
+
+    // Sensitive params should be redacted
+    expect(logOutput).toContain('token=[REDACTED]');
+    expect(logOutput).toContain('api_key=[REDACTED]');
+    // Non-sensitive params should remain intact
+    expect(logOutput).toContain('page=1');
+    // Raw values must NOT appear
+    expect(logOutput).not.toContain('secret123');
+    expect(logOutput).not.toContain('abc');
+  });
+
+  test('does not redact URLs without sensitive query parameters', async () => {
+    const app = createTestApp();
+    const res = await request(app).get('/test/fast?city=Portland&limit=10');
+
+    expect(res.status).toBe(200);
+    expect(logSpy).toHaveBeenCalledTimes(1);
+    const logOutput = logSpy.mock.calls[0][0];
+
+    expect(logOutput).toContain('city=Portland');
+    expect(logOutput).toContain('limit=10');
+  });
+
+  test('does not modify URLs without query strings', async () => {
+    const app = createTestApp();
+    const res = await request(app).get('/test/fast');
+
+    expect(res.status).toBe(200);
+    expect(logSpy).toHaveBeenCalledTimes(1);
+    const logOutput = logSpy.mock.calls[0][0];
+
+    expect(logOutput).toContain('/test/fast');
+    expect(logOutput).not.toContain('?');
+  });
 });
+

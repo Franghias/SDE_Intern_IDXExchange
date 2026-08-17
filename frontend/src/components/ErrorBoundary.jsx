@@ -26,7 +26,10 @@ class ErrorBoundary extends Component {
     if (this.props.onError) {
       this.props.onError(error, errorInfo);
     }
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
+    // Only log full error details in development; in production just log a generic marker
+    if (!import.meta.env.PROD) {
+      console.error('ErrorBoundary caught an error:', error, errorInfo);
+    }
   }
 
   resetErrorBoundary = () => {
@@ -60,6 +63,7 @@ class ErrorBoundary extends Component {
   render() {
     const { hasError, error, errorInfo, showDetails } = this.state;
     const { fallback, fallbackRender, children } = this.props;
+    const isDev = !import.meta.env.PROD;
 
     if (hasError) {
       if (fallbackRender) {
@@ -98,7 +102,7 @@ class ErrorBoundary extends Component {
               An unexpected render error occurred in this view. You can try recovering the view or return to safety.
             </p>
 
-            {error && (
+            {isDev && error && (
               <div className="error-boundary-summary">
                 <code>{error.message || error.toString()}</code>
               </div>
@@ -143,26 +147,28 @@ class ErrorBoundary extends Component {
               </button>
             </div>
 
-            <div className="error-boundary-details-toggle">
-              <button
-                type="button"
-                className="btn-details-toggle"
-                onClick={this.toggleDetails}
-                aria-expanded={showDetails}
-              >
-                {showDetails ? 'Hide technical details ▲' : 'Show technical details ▼'}
-              </button>
+            {isDev && (
+              <div className="error-boundary-details-toggle">
+                <button
+                  type="button"
+                  className="btn-details-toggle"
+                  onClick={this.toggleDetails}
+                  aria-expanded={showDetails}
+                >
+                  {showDetails ? 'Hide technical details ▲' : 'Show technical details ▼'}
+                </button>
 
-              {showDetails && (
-                <div className="error-boundary-details-content">
-                  <p className="details-heading">Stack Trace:</p>
-                  <pre className="details-stack">
-                    {error?.stack || 'No stack trace available'}
-                    {errorInfo?.componentStack && `\n\nComponent Stack:\n${errorInfo.componentStack}`}
-                  </pre>
-                </div>
-              )}
-            </div>
+                {showDetails && (
+                  <div className="error-boundary-details-content">
+                    <p className="details-heading">Stack Trace:</p>
+                    <pre className="details-stack">
+                      {error?.stack || 'No stack trace available'}
+                      {errorInfo?.componentStack && `\n\nComponent Stack:\n${errorInfo.componentStack}`}
+                    </pre>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       );
