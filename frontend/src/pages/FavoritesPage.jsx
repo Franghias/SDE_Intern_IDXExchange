@@ -40,7 +40,7 @@ function FavoritesPage() {
   const totalPages = Math.ceil(total / itemsPerPage);
 
   const loadFavoriteProperties = useCallback(
-    async (favIds, filters = {}, page = 1, limit = 20, criteria = []) => {
+    async (favIds, filters = {}, page = 1, limit = 20, criteria = sortCriteria) => {
       if (!favIds || favIds.length === 0) {
         setProperties([]);
         setTotal(0);
@@ -89,7 +89,7 @@ function FavoritesPage() {
         setLoading(false);
       }
     },
-    []
+    [sortCriteria]
   );
 
   // On mount: await prefetch Promise if available and favorites haven't changed,
@@ -141,18 +141,16 @@ function FavoritesPage() {
   function handleSearch(filters) {
     setActiveFilters(filters);
     setCurrentPage(1);
-    setSortCriteria([]);
     if (favoritesCache) favoritesCache.filterFormValues = filterFormValues;
-    loadFavoriteProperties(favorites, filters, 1, itemsPerPage, []);
+    loadFavoriteProperties(favorites, filters, 1, itemsPerPage, sortCriteria);
   }
 
   function handleClear() {
     setActiveFilters({});
     setFilterFormValues({ ...INITIAL_FILTERS });
     setCurrentPage(1);
-    setSortCriteria([]);
     if (favoritesCache) favoritesCache.filterFormValues = { ...INITIAL_FILTERS };
-    loadFavoriteProperties(favorites, {}, 1, itemsPerPage, []);
+    loadFavoriteProperties(favorites, {}, 1, itemsPerPage, sortCriteria);
   }
 
   function handlePageChange(page) {
@@ -171,7 +169,12 @@ function FavoritesPage() {
   function handleSortChange(newCriteria) {
     setSortCriteria(newCriteria);
     setCurrentPage(1);
-    loadFavoriteProperties(favorites, activeFilters, 1, itemsPerPage, newCriteria);
+    setActiveFilters(filterFormValues);
+    if (favoritesCache) {
+      favoritesCache.sortCriteria = newCriteria;
+      favoritesCache.filterFormValues = filterFormValues;
+    }
+    loadFavoriteProperties(favorites, filterFormValues, 1, itemsPerPage, newCriteria);
   }
 
   function handleRemoveFavorite(id) {
@@ -260,12 +263,10 @@ function FavoritesPage() {
       />
 
       {/* Sort controls — below filters */}
-      {!loading && !error && (
-        <SortControls
-          sortCriteria={sortCriteria}
-          onChange={handleSortChange}
-        />
-      )}
+      <SortControls
+        sortCriteria={sortCriteria}
+        onChange={handleSortChange}
+      />
 
       {/* Top pagination — below sort, above grid */}
       {!loading && !error && totalPages > 1 && (

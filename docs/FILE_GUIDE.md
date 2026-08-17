@@ -628,7 +628,7 @@ The entire card is an `<a>` tag with `target="_blank"` — clicking opens the de
 
 **How it works:**
 1. **Toggle:** Has an open/close button. When `defaultOpen` is true, starts expanded (used on the Chat Search page).
-2. **Message history:** Maintains a `messages` state array of `{ role: "user"|"assistant", content: "..." }` objects.
+2. **Message history & Persistence:** Maintains a `messages` state array of `{ role: "user"|"assistant", content: "..." }` objects. Uses a module-level `chatHistoryCache` keyed by `pageContext` so conversation history is preserved across page navigation until "Clear conversation" is clicked.
 3. **Sending a message:**
    - Adds user message to the conversation.
    - Calls `sendChatMessage()` from `chatApi.js` with the full conversation history, current filter values, and page context.
@@ -657,9 +657,9 @@ The entire card is an `<a>` tag with `target="_blank"` — clicking opens the de
 2. **In-memory caching:** Stores results, filters, sort criteria, and pagination state in a module-level `listingsCache` object. When the user navigates away and comes back, the page restores from cache instead of re-fetching.
 3. Renders `<ChatAssistant>` (for AI filter assistance), `<PropertyFilters>` (controlled mode — filters state lives in the page), `<SortControls>`, `<Pagination>` (top and bottom), and a grid of `<PropertyCard>` components.
 4. **Filter flow:** User types in filters → clicks Search → `fetchProperties()` is called with the filter values → results update → cache is updated → page is re-rendered.
-5. **Sort flow:** User selects sort directions → clicks Sort → `fetchProperties()` is called with `sortCriteria` → results update.
+5. **Sort flow:** User selects sort directions → clicks Sort → `fetchProperties()` is called applying both pending filter form inputs (`filterFormValues`) and `sortCriteria` → results update.
 6. **Pagination flow:** User clicks a page number → offset is recalculated → `fetchProperties()` is called → scroll to top.
-7. When filters change, sort criteria reset and pagination resets to page 1.
+7. When filters change or are cleared, active sort criteria are preserved and pagination resets to page 1.
 8. Each `PropertyCard` receives `isFavorite` and `onToggleFavorite` from `useFavorites()`.
 
 ---

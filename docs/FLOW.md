@@ -48,7 +48,7 @@ The application uses a split-screen dashboard architecture (`App.jsx` + `Sidebar
   2. **In-Memory Caching**: Results, pagination, sort, and form state are saved in `listingsCache`. Re-visiting the page restores state without network requests.
   3. **AI Chatbot Assistance**: User can open `ChatAssistant` above search filters to describe desired properties in natural language. Chatbot populates filter inputs (city, state, zipcode, price, beds, baths) with visual field highlights. Each page maintains an independent conversation history. Message auto-scrolling is scoped strictly inside the chat container (`scrollTop`), preventing window/page scrolling.
   4. **Filtering**: Submitting `PropertyFilters` updates search parameters (city, zipcode, minPrice, maxPrice, beds, baths) and resets view to Page 1.
-  5. **Multi-Column Sorting**: User selects sort fields and direction (Asc/Desc) via `SortControls`. Sort criteria persist across pagination changes but reset when filter inputs change.
+  5. **Multi-Column Sorting**: User selects sort fields and direction (Asc/Desc) via `SortControls`. Sort criteria persist across pagination and filter changes/clears. Clicking the Sort button applies both pending filter form inputs and the new sort criteria simultaneously.
   6. **Favoriting**: Toggling the heart icon (♡ / ♥) on any card calls `useFavorites` hook to update `localStorage` and update live sidebar badge counter.
   7. **Card Navigation**: Clicking a card opens `/property/:id` in a new tab.
 

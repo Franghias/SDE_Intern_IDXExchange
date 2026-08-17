@@ -617,3 +617,27 @@
 - Handled this at two layers:
   1. **Parse-time filter (`parsePhotos`)**: Filters out string items containing `"code":"404"` or `"Media record not found!"` when parsing JSON photo arrays.
   2. **Runtime `onError` filter (`PropertyImageGallery.jsx` & `PropertyImageCarousel.jsx`)**: Added `onError={() => handleImageError(url)}` handlers to main gallery images, thumbnails, lightbox images, and card carousel images. Failed URLs are added to `failedPhotos` state and filtered out from `validPhotos`, cleanly recalculating photo indexes and falling back to `PLACEHOLDER_IMG` ('No Photo') if all images fail.
+
+#### 2026-08-13 — AI Support Filter Fixes, Persistent Chat State & Sort Criteria Caching
+
+**Decision: Per-Page Context Module Cache for Chat Conversation Memory (`ChatAssistant.jsx`)**
+- Stored chat messages in a module-level `chatHistoryCache` object keyed by `pageContext` (`listings`, `openhouses`, `favorites`, `chatsearch`).
+- Restores page-specific conversation history when navigating between pages, preventing loss of chat history when components unmount and remount.
+- Purges only the active page context cache entry when "Clear conversation" is clicked.
+
+**Decision: System Prompt Rules for City Full Name, State 2-Letter Upper, and Filter Replacement (`backend/src/routes/chat.js`)**
+- Added explicit instructions in `buildSystemPrompt()`:
+  - **City Formatting Rule**: `city` filter MUST always be full Title-Case city names (e.g. "LA" → "Los Angeles", "NYC" → "New York"). Shorthand abbreviations are forbidden.
+  - **State Formatting Rule**: `state` filter MUST always be 2 uppercase capital letters (e.g. "CA", "NY").
+  - **Filter Replacement vs Incremental Updates**: LLM evaluates active filter values from context. For filter setting/replacement requests ("set filter to..."), omitted active filter keys are set to `""` (empty string) in `filters` to reset them on the frontend. For incremental requests ("add...", "also..."), existing active filters are preserved.
+
+**Decision: Sort Criteria Preservation & Pending Filter Synchronization (`ListingsPage.jsx`, `FavoritesPage.jsx`, `OpenHousesPage.jsx`)**
+- Updated `handleSearch`, `handleClear`, and `loadOpenHouses` so active `sortCriteria` is preserved when users apply/clear property filters or select date ranges/calendar slots.
+- Updated `handleSortChange` across `ListingsPage.jsx`, `FavoritesPage.jsx`, and `OpenHousesPage.jsx` so that clicking the Sort button in `SortControls` applies both pending filter form inputs (`filterFormValues`) and the new `sortCriteria` simultaneously, setting `activeFilters(filterFormValues)`.
+- Rendered `<SortControls>` unconditionally below filters across all pages for consistent accessibility.
+- Preserves active `sortCriteria` in module caches (`listingsCache`, `favoritesCache`, `openHousesCache`) across filter updates and route navigation, saving user time.
+
+**Decision: Automatic Filter Reset on Chat Conversation Clear (`ChatAssistant.jsx`)**
+- Updated `handleClearChat()` in `ChatAssistant.jsx` to call `onFiltersChange(getResetFilters(pageContext, filters))`.
+- Clears active filter fields on the page so that `CURRENT FILTER VALUES` passed in the backend system prompt (`buildSystemPrompt`) resets to empty `{}`.
+- Guarantees complete context isolation: starting a new conversation after clearing chat contains zero residual filter context from the previous chat session.

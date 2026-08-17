@@ -59,7 +59,7 @@ function OpenHousesPage() {
   /**
    * Load paginated open houses for the card list.
    */
-  const loadOpenHouses = useCallback(async (range = null, page = 1, limit = 20, propFilters = {}, criteria = []) => {
+  const loadOpenHouses = useCallback(async (range = null, page = 1, limit = 20, propFilters = {}, criteria = sortCriteria) => {
     setLoading(true);
     setError(null);
     try {
@@ -92,7 +92,7 @@ function OpenHousesPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [sortCriteria]);
 
   /**
    * Load all open house events for the current calendar month view.
@@ -425,7 +425,12 @@ function OpenHousesPage() {
   function handleSortChange(newCriteria) {
     setSortCriteria(newCriteria);
     setCurrentPage(1);
-    loadOpenHouses(activeRange, 1, itemsPerPage, activePropertyFilters, newCriteria);
+    setActivePropertyFilters(filterFormValues);
+    if (openHousesCache) {
+      openHousesCache.sortCriteria = newCriteria;
+      openHousesCache.filterFormValues = filterFormValues;
+    }
+    loadOpenHouses(activeRange, 1, itemsPerPage, filterFormValues, newCriteria);
   }
 
   function handlePageChange(page) {
@@ -591,12 +596,10 @@ function OpenHousesPage() {
       />
 
       {/* Sort controls — below filters */}
-      {!loading && !error && (
-        <SortControls
-          sortCriteria={sortCriteria}
-          onChange={handleSortChange}
-        />
-      )}
+      <SortControls
+        sortCriteria={sortCriteria}
+        onChange={handleSortChange}
+      />
 
       {/* Active filter indicator */}
       {activeRange && (

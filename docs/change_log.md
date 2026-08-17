@@ -1,11 +1,5 @@
 ### This file is where you update changes you make to the project. Remember to also write down tasks from which week, dates, file paths, and any other relevant information. 
 
-#### 2026-08-13 — Favorite Heart Component & heartFavorite.test.jsx
-- Added heart favorite toggle button component to open house cards in `OpenHousesPage.jsx` and styled in `OpenHousesPage.css`.
-- Renamed and expanded test suite `OpenHousesPage.test.jsx` into `heartFavorite.test.jsx` to test all heart favorite components across all pages (`PropertyCard`, `OpenHousesPage`, `PropertyDetailPage`, `ListingsPage`, and `FavoritesPage`).
-- Updated documentation in `frontend/README.md`, `README.md`, and `docs/change_log.md`.
-- Files: `frontend/src/pages/OpenHousesPage.jsx`, `frontend/src/stylesheets/OpenHousesPage.css`, `frontend/src/test/heartFavorite.test.jsx`, `frontend/src/test/setup.js`, `frontend/README.md`, `README.md`, `docs/change_log.md`.
-
 #### 2026-06-23 — Week 1: Setup Database
 - Created `.env.example` with MySQL credentials (MYSQL_ROOT_PASSWORD, MYSQL_DATABASE, MYSQL_PORT)
 - Created `.env` from `.env.example` for local development
@@ -514,4 +508,32 @@
   - Added dynamic `onError` image loading failure tracking (`failedPhotos` state) in `PropertyImageGallery.jsx` and `PropertyImageCarousel.jsx` so that any image URLs returning HTTP 404 status or failing to render are automatically filtered out from `validPhotos`, preventing broken media messages or 404 error cards from displaying to users.
   - All 66 frontend unit tests across 10 test suites pass cleanly via `npm test`.
 - Files: `frontend/src/components/PropertyImageGallery.jsx`, `frontend/src/components/PropertyImageCarousel.jsx`, `frontend/src/utils/format.js`, `frontend/src/test/format.test.js`, `docs/decision_log.md`, `docs/change_log.md`
+
+#### 2026-08-13 — Favorite Heart Component & heartFavorite.test.jsx
+- Added heart favorite toggle button component to open house cards in `OpenHousesPage.jsx` and styled in `OpenHousesPage.css`.
+- Renamed and expanded test suite `OpenHousesPage.test.jsx` into `heartFavorite.test.jsx` to test all heart favorite components across all pages (`PropertyCard`, `OpenHousesPage`, `PropertyDetailPage`, `ListingsPage`, and `FavoritesPage`).
+- Updated documentation in `frontend/README.md`, `README.md`, and `docs/change_log.md`.
+- Files: `frontend/src/pages/OpenHousesPage.jsx`, `frontend/src/stylesheets/OpenHousesPage.css`, `frontend/src/test/heartFavorite.test.jsx`, `frontend/src/test/setup.js`, `frontend/README.md`, `README.md`, `docs/change_log.md`.
+
+#### 2026-08-13 — AI Support Filter Fixes, Persistent Chat State & LLM System Prompt Guidelines
+- **Per-Page Chat Persistence**: Implemented `chatHistoryCache` in `ChatAssistant.jsx` so conversation history is preserved per `pageContext` across page navigation until "Clear conversation" is clicked.
+- **LLM System Prompt Rules**: Updated `buildSystemPrompt` in `backend/src/routes/chat.js` with:
+  - **City Formatting Rule**: `city` filter must always be full title-case name (e.g. "LA" $\rightarrow$ "Los Angeles", "NYC" $\rightarrow$ "New York"). Never output shorthand abbreviations.
+  - **State Formatting Rule**: `state` filter must always be 2 uppercase capital letters (e.g. "CA", "NY").
+  - **Filter Replacement vs Incremental Updates**: Instructed LLM to set omitted active filter keys to `""` when users issue new/reset filter requests ("set filter to..."), while preserving active filters on incremental requests ("add...", "also...").
+- **Unit Tests**: Created `ChatAssistantPersistence.test.jsx` verifying per-page chat persistence, separate contexts, history clearing, and empty filter string clearing.
+- **Documentation**: Updated `docs/FILE_GUIDE.md` and `docs/change_log.md`.
+- **Files**: `backend/src/routes/chat.js`, `frontend/src/components/ChatAssistant.jsx`, `frontend/src/test/ChatAssistantPersistence.test.jsx`, `docs/FILE_GUIDE.md`, `docs/change_log.md`.
+
+#### 2026-08-13 — Sort Criteria Caching & Filter Form Synchronization
+- **Per-Page Sort Preservation**: Updated `ListingsPage.jsx`, `FavoritesPage.jsx`, and `OpenHousesPage.jsx` so that active `sortCriteria` is preserved when users apply or clear property filters or select date ranges/calendar slots.
+- **Pending Filter Form Synchronization**: Updated `handleSortChange` in `ListingsPage.jsx`, `FavoritesPage.jsx`, and `OpenHousesPage.jsx` so that clicking the Sort button in `SortControls` applies both the pending filter inputs (`filterFormValues`) and the new sort criteria simultaneously.
+- **Page Cache Integration**: `sortCriteria` remains cached in `listingsCache`, `favoritesCache`, and `openHousesCache` when navigating away and back to pages, saving user time by maintaining selected sort configurations.
+- **Files**: `frontend/src/pages/ListingsPage.jsx`, `frontend/src/pages/FavoritesPage.jsx`, `frontend/src/pages/OpenHousesPage.jsx`, `docs/change_log.md`.
+
+#### 2026-08-13 — Chat Conversation Clear Filter Reset
+- **Filter Reset on Chat Clear**: Updated `handleClearChat` in `ChatAssistant.jsx` to trigger `onFiltersChange(getResetFilters(pageContext, filters))`, clearing all filter fields when the user clicks "Clear conversation".
+- **LLM Context Isolation**: Prevents stale filter values from being passed in `CURRENT FILTER VALUES` within the LLM system prompt when starting a fresh conversation after clearing chat history.
+- **Files**: `frontend/src/components/ChatAssistant.jsx`, `docs/change_log.md`, `docs/decision_log.md`.
+
 

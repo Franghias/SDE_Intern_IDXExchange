@@ -36,7 +36,7 @@ function ListingsPage() {
 
   const totalPages = Math.ceil(total / itemsPerPage);
 
-  const loadProperties = useCallback(async (filters = {}, page = 1, limit = 20, criteria = []) => {
+  const loadProperties = useCallback(async (filters = {}, page = 1, limit = 20, criteria = sortCriteria) => {
     setLoading(true);
     setError(null);
     try {
@@ -65,7 +65,7 @@ function ListingsPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [sortCriteria]);
 
   // On mount: await prefetch Promise if available, otherwise fetch.
   // Subsequent visits restore from the module-level cache instead.
@@ -100,18 +100,16 @@ function ListingsPage() {
   function handleSearch(filters) {
     setActiveFilters(filters);
     setCurrentPage(1);
-    setSortCriteria([]);
     if (listingsCache) listingsCache.filterFormValues = filterFormValues;
-    loadProperties(filters, 1, itemsPerPage, []);
+    loadProperties(filters, 1, itemsPerPage, sortCriteria);
   }
 
   function handleClear() {
     setActiveFilters({});
     setFilterFormValues({ ...INITIAL_FILTERS });
     setCurrentPage(1);
-    setSortCriteria([]);
     if (listingsCache) listingsCache.filterFormValues = { ...INITIAL_FILTERS };
-    loadProperties({}, 1, itemsPerPage, []);
+    loadProperties({}, 1, itemsPerPage, sortCriteria);
   }
 
   function handlePageChange(page) {
@@ -130,7 +128,12 @@ function ListingsPage() {
   function handleSortChange(newCriteria) {
     setSortCriteria(newCriteria);
     setCurrentPage(1);
-    loadProperties(activeFilters, 1, itemsPerPage, newCriteria);
+    setActiveFilters(filterFormValues);
+    if (listingsCache) {
+      listingsCache.sortCriteria = newCriteria;
+      listingsCache.filterFormValues = filterFormValues;
+    }
+    loadProperties(filterFormValues, 1, itemsPerPage, newCriteria);
   }
 
   /**
@@ -197,12 +200,10 @@ function ListingsPage() {
       />
 
       {/* Sort controls — below filters */}
-      {!loading && !error && (
-        <SortControls
-          sortCriteria={sortCriteria}
-          onChange={handleSortChange}
-        />
-      )}
+      <SortControls
+        sortCriteria={sortCriteria}
+        onChange={handleSortChange}
+      />
 
       {/* Top pagination — below sort, above grid */}
       {!loading && !error && totalPages > 1 && (

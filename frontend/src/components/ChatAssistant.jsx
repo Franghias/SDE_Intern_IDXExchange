@@ -3,6 +3,18 @@ import { sendChatMessage } from '../api/chatApi';
 import '../stylesheets/ChatAssistant.css';
 
 /**
+ * Module-level cache: stores conversation history per pageContext
+ * so that navigating away and coming back retains the chat until "Clear conversation" is clicked.
+ */
+const chatHistoryCache = {};
+
+export function clearAllChatHistoryCache() {
+  Object.keys(chatHistoryCache).forEach((key) => {
+    delete chatHistoryCache[key];
+  });
+}
+
+/**
  * ChatAssistant — Conversational AI component that helps users fill in search filters.
  *
  * Props:
@@ -13,13 +25,23 @@ import '../stylesheets/ChatAssistant.css';
  */
 function ChatAssistant({ filters, onFiltersChange, pageContext, defaultOpen = false }) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState(() => chatHistoryCache[pageContext] || []);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [changedFields, setChangedFields] = useState([]);
   const messagesContainerRef = useRef(null);
   const inputRef = useRef(null);
+
+  // Restore cached messages when pageContext changes
+  useEffect(() => {
+    setMessages(chatHistoryCache[pageContext] || []);
+  }, [pageContext]);
+
+  // Persist messages to module cache whenever they change
+  useEffect(() => {
+    chatHistoryCache[pageContext] = messages;
+  }, [messages, pageContext]);
 
   // Scroll to bottom of chat messages container when messages update (without scrolling the main page)
   useEffect(() => {
@@ -103,8 +125,14 @@ function ChatAssistant({ filters, onFiltersChange, pageContext, defaultOpen = fa
 
   function handleClearChat() {
     setMessages([]);
+    delete chatHistoryCache[pageContext];
     setError(null);
     setChangedFields([]);
+
+    if (onFiltersChange) {
+      const resetFilters = getResetFilters(pageContext, filters);
+      onFiltersChange(resetFilters);
+    }
   }
 
   function handleToggle() {
@@ -261,6 +289,31 @@ function formatFieldName(field) {
     sortOrder: 'Sort Direction',
   };
   return map[field] || field;
+}
+
+/**
+ * Generate an empty filter object for resetting filters on chat clear.
+ */
+function getResetFilters(pageContext, currentFilters) {
+  const propertyFilters = ['city', 'state', 'zipcode', 'minPrice', 'maxPrice', 'beds', 'baths', 'sortBy', 'sortOrder'];
+  const dateFilters = ['startDate', 'endDate'];
+
+  const keysToReset = pageContext === 'openhouses'
+    ? [...propertyFilters, ...dateFilters]
+    : propertyFilters;
+
+  const reset = {};
+  for (const key of keysToReset) {
+    reset[key] = '';
+  }
+
+  if (currentFilters) {
+    for (const key of Object.keys(currentFilters)) {
+      reset[key] = '';
+    }
+  }
+
+  return reset;
 }
 
 export default ChatAssistant;
