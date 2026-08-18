@@ -572,6 +572,20 @@
 - **Test Results:**
   - Backend: 90 passed, 1 failed (pre-existing: MySQL not running locally for health 200 test). All new/updated tests pass.
   - Frontend: 76 passed, 0 failed. All test suites pass.
-- **Files**: `backend/src/utils/logger.js`, `backend/src/middleware/requestLogger.js`, `backend/src/routes/health.js`, `backend/src/routes/chat.js`, `backend/src/routes/properties.js`, `backend/src/routes/openhouses.js`, `backend/src/server.js`, `frontend/src/components/ErrorBoundary.jsx`, `frontend/vercel.json`, `.gitignore`, `backend/.env`, `backend/tests/health.test.js`, `backend/tests/requestLogger.test.js`, `docs/LOCAL_RUN_GUIDE.md`, `docs/CLOUD_DEPLOYMENT_GUIDE.md`, `docs/FILE_GUIDE.md`, `docs/change_log.md`, `docs/decision_log.md`.
+- **Files**: `backend/src/utils/logger.js`, `backend/src/middleware/requestLogger.js`, `backend/src/routes/health.js`, `backend/src/routes/chat.js`, `backend/src/routes/properties.js`, `backend/src/routes/openhouses.js`, `backend/src/server.js`, `frontend/src/components/ErrorBoundary.jsx`, `frontend/vercel.json`, `.gitignore`, `backend/.env`, `backend/tests/health.test.js`, `backend/tests/requestLogger.test.js`, `docs/LOCAL_RUN_GUIDE.md`, `docs/CLOUD_DEPLOYMENT_GUIDE.md`, `docs/Railway_MySQL_CONNECTION_GUIDE.md`, `docs/FILE_GUIDE.md`, `docs/change_log.md`, `docs/decision_log.md`.
+
+#### 2026-08-18 — Railway Cloud MySQL Connection Support & Documentation Updates
+- **Backend — Updated `backend/src/config/db.js`:**
+  - Added support for connection URL strings (`MYSQL_URL`, `MYSQL_PUBLIC_URL`, `DATABASE_URL`, `DB_URL`) for direct cloud connection pools.
+  - Added fallback checks for Railway standard discrete environment variables (`MYSQLHOST`, `MYSQLUSER`, `MYSQLPASSWORD`, `MYSQLDATABASE`, `MYSQLPORT`) before defaulting to local development variables (`DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_PORT`).
+- **Backend — Updated `backend/.env.example`:**
+  - Documented optional `MYSQL_URL` and `MYSQL_PUBLIC_URL` variable overrides for Railway database integration alongside standard local development variables.
+- **Documentation Updates:**
+  - Updated [`docs/CLOUD_DEPLOYMENT_GUIDE.md`](file:///c:/Users/User/Downloads/IDXExchange%20-%20SDE%20Intern/docs/CLOUD_DEPLOYMENT_GUIDE.md) to document Railway MySQL environment variables (`MYSQL_URL`, `MYSQL_PUBLIC_URL`, `MYSQLHOST`, `MYSQLUSER`, `MYSQLPASSWORD`, `MYSQLDATABASE`, `MYSQLPORT`).
+  - Updated [`README.md`](file:///c:/Users/User/Downloads/IDXExchange%20-%20SDE%20Intern/README.md) backend environment variables table.
+  - Updated [`backend/README.md`](file:///c:/Users/User/Downloads/IDXExchange%20-%20SDE%20Intern/backend/README.md) `db.js` connection pool section.
+  - Updated [`docs/FILE_GUIDE.md`](file:///c:/Users/User/Downloads/IDXExchange%20-%20SDE%20Intern/docs/FILE_GUIDE.md) `backend/src/config/db.js` description.
+  - Updated [`docs/decision_log.md`](file:///c:/Users/User/Downloads/IDXExchange%20-%20SDE%20Intern/docs/decision_log.md) and [`docs/change_log.md`](file:///c:/Users/User/Downloads/IDXExchange%20-%20SDE%20Intern/docs/change_log.md).
+- **Files**: `backend/src/config/db.js`, `backend/.env.example`, `docs/CLOUD_DEPLOYMENT_GUIDE.md`, `README.md`, `backend/README.md`, `docs/FILE_GUIDE.md`, `docs/decision_log.md`, `docs/change_log.md`.
 
 

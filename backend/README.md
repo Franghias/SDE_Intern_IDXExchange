@@ -11,22 +11,24 @@ backend/
 │   ├── app.js                 # Express app — wires middleware and routes
 │   ├── config/
 │   │   └── db.js              # MySQL connection pool (mysql2/promise, 10 connections)
+│   ├── utils/
+│   │   └── logger.js          # Zero-dependency logger: redactUrl (mask secrets) & sanitizeError
 │   ├── middleware/
-│   │   └── requestLogger.js   # Logs requests: [timestamp] METHOD /url STATUS durationMs & sets X-Response-Time
+│   │   └── requestLogger.js   # Logs requests with URL parameter redaction: [timestamp] METHOD /url STATUS durationMs & sets X-Response-Time
 │   └── routes/
-│       ├── health.js          # GET /api/health — database connectivity check
+│       ├── health.js          # GET /api/health — database connectivity check (sanitized error response)
 │       ├── properties.js      # GET /api/properties (search, sort, hasOpenHouse via EXISTS),
 │       │                      # POST /api/properties/favorites (IDs list search),
 │       │                      # GET /api/properties/:id (configurable columns),
 │       │                      # GET /api/properties/:id/openhouses (status + validation)
 │       ├── openhouses.js      # GET /api/openhouses (date range, exact city/state filters, sort, INNER JOIN, pagination)
-│       └── chat.js            # POST /api/chat — OpenRouter LLM proxy endpoint with security prompt
+│       └── chat.js            # POST /api/chat — OpenRouter LLM proxy endpoint with security prompt & sanitized error logs
 ├── tests/
-│   ├── health.test.js         # 5 tests — health endpoint
+│   ├── health.test.js         # 5 tests — health endpoint with sanitized 500 responses
 │   ├── properties.test.js     # 33 tests — listing search, filters, sorting, favorites, validation
 │   ├── propertyDetail.test.js # 17 tests — property detail, open houses, request logging
 │   ├── openhouses.test.js     # 24 tests — open house calendar endpoint, date/property filtering, sorting, validation
-│   ├── requestLogger.test.js  # 9 tests — request logging middleware, high-res timing, X-Response-Time
+│   ├── requestLogger.test.js  # 12 tests — request logging, URL query redaction, high-res timing, X-Response-Time
 │   └── query_performance.js  # Performance benchmark & EXPLAIN interpretation suite
 ├── OPTIMIZATION_REPORT.md     # Detailed query performance and benchmark report
 ├── .env                       # Environment variables (gitignored)
@@ -70,7 +72,7 @@ Client request
 
 Creates a `mysql2/promise` connection pool with 10 connections. All route handlers share this pool — connections are reused across requests rather than created/destroyed per query.
 
-Reads connection details from environment variables: `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_PORT`.
+Reads connection details dynamically: prioritizes connection URLs (`MYSQL_URL`, `MYSQL_PUBLIC_URL`, `DATABASE_URL`), then Railway standard variables (`MYSQLHOST`, `MYSQLUSER`, `MYSQLPASSWORD`, `MYSQLDATABASE`, `MYSQLPORT`), falling back to local variables (`DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_PORT`).
 
 ### API Endpoints
 

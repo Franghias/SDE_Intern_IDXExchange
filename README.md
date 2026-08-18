@@ -105,9 +105,10 @@ IDXExchange/
 │   │   ├── server.js         # Entry point — starts Express
 │   │   ├── app.js            # Express app (middleware + routes)
 │   │   ├── config/db.js      # MySQL connection pool
-│   │   ├── middleware/       # Request logger (high-precision duration + X-Response-Time)
+│   │   ├── utils/logger.js   # Zero-dependency logger (URL redaction + error sanitization)
+│   │   ├── middleware/       # Request logger (URL query redaction + duration + X-Response-Time)
 │   │   └── routes/           # health.js, properties.js, openhouses.js, chat.js
-│   ├── tests/                # Jest + Supertest (88 tests across 5 test suites)
+│   ├── tests/                # Jest + Supertest (91 tests across 5 test suites)
 │   ├── .env                  # Backend env vars (LLM_API_KEY, DB vars)
 │   └── package.json
 │
@@ -117,17 +118,14 @@ IDXExchange/
 │   │   ├── App.jsx           # React Router setup + ErrorBoundary
 │   │   ├── api/              # API client (propertyApi, chatApi)
 │   │   ├── hooks/            # useFavorites hook (localStorage + cross-tab sync)
-│   │   ├── utils/            # parsePhotos, formatPrice, formatTime, formatDate
-│   │   ├── test/             # Vitest setup + tests (67 tests across 10 suites)
-│   │   ├── stylesheets/      # All CSS (index, App, Sidebar, IntroductionPage, PropertyCard,
-│   │   │                     #   PropertyFilters, SortControls, ChatAssistant, ListingsPage, ChatSearchPage,
-│   │   │                     #   FavoritesPage, OpenHousesPage, Pagination, PropertyDetailPage,
-│   │   │                     #   PropertyImageCarousel, PropertyImageGallery, PropertyMap, ErrorBoundary)
-│   │   ├── components/       # Sidebar, PropertyCard, PropertyFilters, SortControls, ChatAssistant,
-│   │   │                     #   Pagination, PropertyImageCarousel, PropertyImageGallery, PropertyMap, ErrorBoundary
+│   │   ├── utils/            # parsePhotos, formatPrice, formatTime, formatDate, prefetchCache
+│   │   ├── test/             # Vitest setup + tests (76 tests across 12 suites)
+│   │   ├── stylesheets/      # All CSS stylesheets
+│   │   ├── components/       # UI components (Sidebar, PropertyCard, PropertyFilters, ChatAssistant, ErrorBoundary, etc.)
 │   │   └── pages/            # IntroductionPage, ListingsPage, ChatSearchPage, FavoritesPage, OpenHousesPage, PropertyDetailPage
 │   ├── .env                  # VITE_GOOGLE_MAPS_API_KEY (gitignored)
 │   ├── .env.example          # Template for frontend env vars
+│   ├── vercel.json           # Vercel deployment config (API proxy rewrites + SPA fallback)
 │   ├── vite.config.js        # Dev server + API proxy + Vitest config
 │   └── package.json
 │
@@ -142,6 +140,9 @@ IDXExchange/
 │   ├── OVERVIEW.md
 │   ├── TASKS.md
 │   ├── SUPPORT_TASKS.md
+│   ├── LOCAL_RUN_GUIDE.md   # Dev vs Production local workflow & verification guide
+│   ├── CLOUD_DEPLOYMENT_GUIDE.md # Railway + Render + Vercel deployment guide
+│   ├── FILE_GUIDE.md        # Comprehensive file-by-file reference guide
 │   ├── change_log.md
 │   └── decision_log.md
 │
@@ -252,11 +253,12 @@ cd frontend
 
 | Variable | Description |
 |----------|-------------|
-| `DB_HOST` | MySQL host (default: `localhost`) |
-| `DB_USER` | MySQL user |
-| `DB_PASSWORD` | MySQL password |
-| `DB_NAME` | Database name |
-| `DB_PORT` | MySQL port (default: `3306`) |
+| `DB_HOST` / `MYSQLHOST` | MySQL host (default: `localhost` for local dev) |
+| `DB_USER` / `MYSQLUSER` | MySQL user |
+| `DB_PASSWORD` / `MYSQLPASSWORD` | MySQL password |
+| `DB_NAME` / `MYSQLDATABASE` | Database name |
+| `DB_PORT` / `MYSQLPORT` | MySQL port (default: `3306`) |
+| `MYSQL_URL` / `MYSQL_PUBLIC_URL` | Optional full connection URL string (Railway cloud / TCP proxy) |
 | `PORT` | Express server port (default: `5000`) |
 
 ### `frontend/.env` (Vite)

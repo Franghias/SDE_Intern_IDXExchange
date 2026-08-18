@@ -677,3 +677,10 @@
 **Decision: Sanitize server startup log message (`server.js`)**
 - Changed startup log from `Server running on http://localhost:${PORT}` to `Server running on port ${PORT}`.
 - Prevents exposing the internal hostname/URL pattern in cloud log streams, which could aid reconnaissance in cloud environments.
+
+#### 2026-08-18 — Railway & Cloud Database Connection Flexibility
+
+**Decision: Support Railway MySQL connection URLs and standard Railway env vars in `db.js`**
+- Updated `backend/src/config/db.js` to dynamically detect connection URL strings (`MYSQL_URL`, `MYSQL_PUBLIC_URL`, `DATABASE_URL`, `DB_URL`) and pass them to `mysql2/promise` connection pool.
+- Added fallback checking for Railway's default discrete environment variables (`MYSQLHOST`, `MYSQLUSER`, `MYSQLPASSWORD`, `MYSQLDATABASE`, `MYSQLPORT`) before defaulting to local dev variables (`DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_PORT`).
+- Maintains 100% backward compatibility for local development (`npm run dev` and `docker-compose`) while enabling zero-config cloud deployments on Railway / Render.

@@ -143,7 +143,7 @@ docker exec -i idx-mysql-local mysql -uroot -prootpassword rets < database/03_ad
 **What it does:** Creates and exports the MySQL database connection pool using `mysql2/promise`.
 
 **How it works:**
-- Reads connection settings from environment variables (`DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_PORT`).
+- Reads connection settings dynamically: prioritizes connection URLs (`MYSQL_URL`, `MYSQL_PUBLIC_URL`, `DATABASE_URL`), then Railway standard variables (`MYSQLHOST`, `MYSQLUSER`, `MYSQLPASSWORD`, `MYSQLDATABASE`, `MYSQLPORT`), falling back to local variables (`DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_PORT`).
 - Sets `connectionLimit: 10` — allows up to 10 simultaneous database connections.
 - Sets `waitForConnections: true` — queries will wait in line if all 10 connections are busy, rather than failing immediately.
 - Used by all route files (`health.js`, `properties.js`, `openhouses.js`) to run database queries via `pool.query()`.
@@ -919,7 +919,7 @@ All frontend tests use **Vitest** + **React Testing Library** + **@testing-libra
 ---
 
 ### `docs/CLOUD_DEPLOYMENT_GUIDE.md`
-**What it does:** Detailed step-by-step guide for deploying IDXExchange to a free cloud stack: Railway (MySQL database migration), Render (Express backend service), and Vercel (React frontend SPA).
+**What it does:** Detailed step-by-step guide for deploying IDXExchange to a free cloud stack: Railway (MySQL database migration), Render (Express backend service), and Vercel (React frontend SPA). Includes Railway CLI setup, SSH key authentication, and PowerShell streaming pipelines.
 
 ---
 

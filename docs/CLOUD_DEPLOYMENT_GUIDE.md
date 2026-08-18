@@ -9,29 +9,41 @@ This guide provides step-by-step instructions for deploying the **IDXExchange** 
 
 ## 1. Database Migration: Local SQL to Railway MySQL
 
-Since the SQL dumps in `database/` (`01_rets_openhouse.sql`, `02_rets_property.sql`, `03_add_indexes.sql`) are ignored by Git (`.gitignore`), you must import them directly into your Railway MySQL database instance.
+Since the SQL dumps in `database/` (`01_rets_openhouse.sql`, `02_rets_property.sql`, `03_add_indexes.sql`) are ignored by Git (`.gitignore`), you must import them into your Railway MySQL instance. 
 
-### Step-by-Step:
-1. Sign up/log in to [Railway.app](https://railway.app).
-2. Click **+ New Project** $\rightarrow$ **Provision MySQL**.
-3. Once created, click on the **MySQL service** $\rightarrow$ **Variables** / **Connect** tab to get your public connection credentials:
-   - `MYSQLHOST` (e.g., `roundhouse.proxy.rlwy.net`)
-   - `MYSQLPORT` (e.g., `3306` or mapped port `12345`)
-   - `MYSQLUSER` (e.g., `root`)
-   - `MYSQLPASSWORD`
-   - `MYSQLDATABASE` (e.g., `railway` or `rets`)
-4. Open your local terminal in the project root directory and run the import commands using `mysql` CLI:
-   ```bash
-   # 1. Import Open Houses schema & data (~8.7 MB)
-   mysql -h <MYSQLHOST> -P <MYSQLPORT> -u <MYSQLUSER> -p<MYSQLPASSWORD> <MYSQLDATABASE> < database/01_rets_openhouse.sql
+The recommended and most secure method is using the **Railway CLI over an encrypted SSH tunnel** (as detailed in [`docs/Railway_MySQL_CONNECTION_GUIDE.md`](file:///c:/Users/User/Downloads/IDXExchange%20-%20SDE%20Intern/docs/Railway_MySQL_CONNECTION_GUIDE.md)).
 
-   # 2. Import Property schema & data (~632 MB - takes 2-5 minutes)
-   mysql -h <MYSQLHOST> -P <MYSQLPORT> -u <MYSQLUSER> -p<MYSQLPASSWORD> <MYSQLDATABASE> < database/02_rets_property.sql
+### Prerequisites & CLI Link (First-Time Only):
+1. Install Railway CLI in PowerShell: `iwr -useb https://railway.sh | iex`
+2. Authenticate: `railway login`
+3. Link project folder: `railway link` (select your Railway project)
+4. Add SSH Key: `ssh-keygen -t ed25519` then `railway ssh keys add`
 
-   # 3. Add Performance Indexes
-   mysql -h <MYSQLHOST> -P <MYSQLPORT> -u <MYSQLUSER> -p<MYSQLPASSWORD> <MYSQLDATABASE> < database/03_add_indexes.sql
-   ```
-   *(Alternative: You can use a GUI database client like TablePlus, DBeaver, or MySQL Workbench to connect to your Railway host and run these 3 `.sql` scripts).*
+### Upload SQL Files via Railway CLI (PowerShell):
+In Windows PowerShell, traditional `<` redirection is reserved. Pipe your `.sql` files securely using `Get-Content`:
+
+```powershell
+# 1. Import Open Houses schema & data (~8.7 MB)
+Get-Content database/01_rets_openhouse.sql | railway connect
+
+# 2. Import Property schema & data (~632 MB - stream takes a few minutes)
+Get-Content database/02_rets_property.sql | railway connect
+
+# 3. Add Performance Indexes (~2 KB)
+Get-Content database/03_add_indexes.sql | railway connect
+```
+*(When prompted by the CLI, select `MySQL` using your arrow keys).*
+
+---
+
+### Alternative: Direct Public Connection (`mysql` CLI or GUI Client)
+If you enabled public networking on your Railway MySQL service:
+```bash
+mysql -h <MYSQLHOST> -P <MYSQLPORT> -u <MYSQLUSER> -p<MYSQLPASSWORD> <MYSQLDATABASE> < database/01_rets_openhouse.sql
+mysql -h <MYSQLHOST> -P <MYSQLPORT> -u <MYSQLUSER> -p<MYSQLPASSWORD> <MYSQLDATABASE> < database/02_rets_property.sql
+mysql -h <MYSQLHOST> -P <MYSQLPORT> -u <MYSQLUSER> -p<MYSQLPASSWORD> <MYSQLDATABASE> < database/03_add_indexes.sql
+```
+*(Or connect via a GUI client like TablePlus, DBeaver, or MySQL Workbench).*
 
 ---
 
@@ -50,13 +62,16 @@ Since the SQL dumps in `database/` (`01_rets_openhouse.sql`, `02_rets_property.s
    | Key | Value | Notes |
    |---|---|---|
    | `NODE_ENV` | `production` | Enables production mode |
-   | `DB_HOST` | `<Railway MYSQLHOST>` | Railway MySQL Host |
-   | `DB_PORT` | `<Railway MYSQLPORT>` | Railway MySQL Port |
-   | `DB_USER` | `<Railway MYSQLUSER>` | Railway MySQL User |
-   | `DB_PASSWORD` | `<Railway MYSQLPASSWORD>` | Railway MySQL Password |
-   | `DB_NAME` | `<Railway MYSQLDATABASE>` | Railway Database Name |
+   | `MYSQL_URL` or `MYSQL_PUBLIC_URL` | `mysql://root:pass@domain:port/railway` | Railway Connection URL (Optional string override) |
+   | `DB_HOST` (or `MYSQLHOST`) | `<Railway Host>` | Railway MySQL Host (e.g. `${{RAILWAY_PRIVATE_DOMAIN}}` or TCP proxy domain) |
+   | `DB_PORT` (or `MYSQLPORT`) | `3306` | Railway MySQL Port |
+   | `DB_USER` (or `MYSQLUSER`) | `root` | Railway MySQL User |
+   | `DB_PASSWORD` (or `MYSQLPASSWORD`) | `<Railway Root Password>` | Railway MySQL Password |
+   | `DB_NAME` (or `MYSQLDATABASE`) | `railway` | Railway Database Name |
    | `LLM_API_KEY` | `<Your OpenRouter API Key>` | Secret key for AI Assistant |
    | `LLM_MODEL` | `cohere/north-mini-code:free` | Selected LLM Model |
+
+   *(Note: `backend/src/config/db.js` automatically prioritizes `MYSQL_URL` / `MYSQL_PUBLIC_URL` / `DATABASE_URL` if present, then checks Railway standard variables `MYSQLHOST`/`MYSQLUSER`/etc., and falls back to `DB_HOST`/`DB_USER`/etc. for local dev).*
 6. Click **Create Web Service**.
 7. Once deployed, copy your Render backend URL (e.g., `https://idxexchange-backend.onrender.com`).
 
