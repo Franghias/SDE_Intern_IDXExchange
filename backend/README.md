@@ -26,7 +26,7 @@ backend/
 ├── tests/
 │   ├── health.test.js         # 5 tests — health endpoint with sanitized 500 responses
 │   ├── properties.test.js     # 33 tests — listing search, filters, sorting, favorites, validation
-│   ├── propertyDetail.test.js # 17 tests — property detail, open houses, request logging
+│   ├── propertyDetail.test.js # 24 tests — property detail (column expansion, RESO formatting, date formatting), open houses, request logging
 │   ├── openhouses.test.js     # 24 tests — open house calendar endpoint, date/property filtering, sorting, validation
 │   ├── requestLogger.test.js  # 12 tests — request logging, URL query redaction, high-res timing, X-Response-Time
 │   └── query_performance.js  # Performance benchmark & EXPLAIN interpretation suite
@@ -81,7 +81,7 @@ Reads connection details dynamically: prioritizes connection URLs (`MYSQL_URL`, 
 | GET | `/api/health` | Returns `{ status: "ok" }` if database is reachable, 500 if not |
 | GET | `/api/properties` | Search properties with pagination, filters, multi-column sort, and `hasOpenHouse` flag |
 | POST | `/api/properties/favorites` | Query favorite properties by display ID array with filters, sort, and pagination |
-| GET | `/api/properties/:id` | Single property detail by `L_DisplayId` (driven by `PROPERTY_DETAIL_COLUMNS`) |
+| GET | `/api/properties/:id` | Single property detail by `L_DisplayId` (driven by `PROPERTY_DETAIL_COLUMNS`, string formatting via `formatValueString`, and date formatting) |
 | GET | `/api/properties/:id/openhouses` | Open house events with status (`active`, `expired`, `upcoming`) |
 | GET | `/api/openhouses` | All open houses with optional `startDate`/`endDate` date range filtering, property filters (`city`, `state`, `zipcode`, `minPrice`, `maxPrice`, `beds`, `baths`), multi-column sorting (`sortBy`/`sortOrder`), INNER JOIN with `rets_property`, pagination up to 500 |
 | POST | `/api/chat` | Conversational AI filter assistant endpoint proxying to OpenRouter (`cohere/north-mini-code:free`) with safety guardrails |
@@ -118,7 +118,7 @@ Queries properties where `p.L_DisplayId IN (...)` combining all search filters, 
 
 Returns the property object or 404. Looks up by `L_DisplayId`.
 
-The SELECT clause is built dynamically from the `PROPERTY_DETAIL_COLUMNS` array at the top of `src/routes/properties.js` including `StandardStatus`.
+The SELECT clause is built dynamically from the `PROPERTY_DETAIL_COLUMNS` array at the top of `src/routes/properties.js` including `StandardStatus`. Concatenated RESO strings are formatted via `formatValueString()` and `onMarketDate` is formatted to long date format (e.g., `"August 25, 2026"`).
 
 ### `GET /api/openhouses` — Open House Calendar & Search
 
@@ -151,7 +151,7 @@ npm install
 # Start dev server (auto-restarts on file changes)
 npm run dev
 
-# Run unit and integration tests (Jest + Supertest — 88 tests across 5 suites)
+# Run unit and integration tests (Jest + Supertest — 95 tests across 5 suites)
 npm test
 
 # Run query performance & EXPLAIN benchmark suite

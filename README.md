@@ -228,15 +228,16 @@ Open `http://localhost:3000` to see the property listings.
 ### 4. Run tests & performance benchmarks
 
 ```bash
-# Backend tests (88 tests across 5 suites)
+# Backend tests (95 tests across 5 suites)
 cd backend
 npm test
 
 # Query Performance & EXPLAIN Benchmark Suite
 npm run perf
 
-# Frontend tests (67 Vitest tests across 10 suites)
+# Frontend tests (82 Vitest tests across 13 suites)
 cd frontend
+npm test
 ```
 
 ## Environment Variables

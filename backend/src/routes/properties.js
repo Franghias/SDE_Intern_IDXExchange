@@ -40,8 +40,68 @@ const PROPERTY_DETAIL_COLUMNS = [
   { db: 'LMD_MP_Longitude', alias: 'longitude' },
   { db: 'L_Type_', alias: 'propertyType' },
   { db: 'StandardStatus', alias: 'status' },
-  { db: 'Flooring', alias: 'flooring' }
+  { db: 'Flooring', alias: 'flooring' },
+  { db: 'SubdivisionName', alias: 'subdivisionName' },
+  { db: 'ArchitecturalStyle', alias: 'architecturalStyle' },
+  { db: 'StructureType', alias: 'structureType' },
+  { db: 'PropertyCondition', alias: 'propertyCondition' },
+  { db: 'HighSchoolDistrict', alias: 'highSchoolDistrict' },
+  { db: 'AssociationFee', alias: 'associationFee' },
+  { db: 'AssociationFeeFrequency', alias: 'associationFeeFrequency' },
+  { db: 'AssociationName', alias: 'associationName' },
+  { db: 'AssociationAmenities', alias: 'associationAmenities' },
+  { db: 'Cooling', alias: 'cooling' },
+  { db: 'Heating', alias: 'heating' },
+  { db: 'WaterSource', alias: 'waterSource' },
+  { db: 'Roof', alias: 'roof' },
+  { db: 'View', alias: 'view' },
+  { db: 'FireplaceFeatures', alias: 'fireplaceFeatures' },
+  { db: 'InteriorFeatures', alias: 'interiorFeatures' },
+  { db: 'PatioAndPorchFeatures', alias: 'patioAndPorchFeatures' },
+  { db: 'PoolFeatures', alias: 'poolFeatures' },
+  { db: 'CommunityFeatures', alias: 'communityFeatures' },
+  { db: 'SecurityFeatures', alias: 'securityFeatures' },
+  { db: 'SpaFeatures', alias: 'spaFeatures' },
+  { db: 'LotFeatures', alias: 'lotFeatures' },
+  { db: 'Appliances', alias: 'appliances' },
+  { db: 'Fencing', alias: 'fencing' },
+  { db: 'L_Keyword5', alias: 'garageCapacity' },
+  { db: 'OnMarketDate', alias: 'onMarketDate' },
+  { db: 'ListAgentFullName', alias: 'listAgentFullName' },
+  { db: 'LO1_OrganizationName', alias: 'officeName' },
+  { db: 'ListingTerms', alias: 'listingTerms' },
+  { db: 'Disclosures', alias: 'disclosures' },
+  { db: 'SpecialListingConditions', alias: 'specialListingConditions' },
+  { db: 'OccupantType', alias: 'occupantType' },
+  { db: 'RoomType', alias: 'roomType' }
 ];
+
+/**
+ * Fields that should remain as raw strings without PascalCase formatting.
+ */
+const RAW_STRING_FIELDS = new Set([
+  'listingId', 'displayId', 'address', 'city', 'state', 'zipCode',
+  'description', 'photos', 'status', 'parcelNumber', 'latitude', 'longitude'
+]);
+
+/**
+ * Format comma-separated PascalCase / concatenated RESO strings into clean, readable labels.
+ * e.g. "CentralAir,EnergyStarQualifiedEquipment" -> "Central Air, Energy Star Qualified Equipment"
+ * e.g. "Las Vistas,Altea" -> "Las Vistas, Altea"
+ */
+function formatValueString(str) {
+  if (typeof str !== 'string') return str;
+  return str
+    .split(',')
+    .map((item) =>
+      item
+        .trim()
+        .replace(/([a-z])([A-Z])/g, '$1 $2')
+        .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')
+    )
+    .filter(Boolean)
+    .join(', ');
+}
 
 /**
  * Build the SELECT clause from PROPERTY_DETAIL_COLUMNS.
@@ -597,7 +657,32 @@ router.get('/:id', async (req, res) => {
       });
     }
 
-    res.json(rows[0]);
+    const property = { ...rows[0] };
+
+    // Format onMarketDate as "August 25, 2026"
+    if (property.onMarketDate) {
+      const dateVal = property.onMarketDate;
+      const d = typeof dateVal === 'string'
+        ? new Date(dateVal.replace(/-/g, '/'))
+        : new Date(dateVal);
+      if (!isNaN(d.getTime())) {
+        property.onMarketDate = d.toLocaleDateString('en-US', {
+          month: 'long',
+          day: 'numeric',
+          year: 'numeric',
+          timeZone: 'UTC',
+        });
+      }
+    }
+
+    // Format string values (split PascalCase & normalize commas with spaces)
+    for (const [key, val] of Object.entries(property)) {
+      if (typeof val === 'string' && !RAW_STRING_FIELDS.has(key)) {
+        property[key] = formatValueString(val);
+      }
+    }
+
+    res.json(property);
   } catch (err) {
     logger.error('Property detail query failed', err);
     res.status(500).json({

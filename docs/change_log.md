@@ -588,4 +588,21 @@
   - Updated [`docs/decision_log.md`](file:///c:/Users/User/Downloads/IDXExchange%20-%20SDE%20Intern/docs/decision_log.md) and [`docs/change_log.md`](file:///c:/Users/User/Downloads/IDXExchange%20-%20SDE%20Intern/docs/change_log.md).
 - **Files**: `backend/src/config/db.js`, `backend/.env.example`, `docs/CLOUD_DEPLOYMENT_GUIDE.md`, `README.md`, `backend/README.md`, `docs/FILE_GUIDE.md`, `docs/decision_log.md`, `docs/change_log.md`.
 
+#### 2026-08-25 — Property Detail Columns Expansion, RESO String Formatting, Date Formatting & Unit Tests
+- **Backend — Expanded `PROPERTY_DETAIL_COLUMNS` (`backend/src/routes/properties.js`):**
+  - Expanded `PROPERTY_DETAIL_COLUMNS` configuration in `properties.js` with comprehensive RESO database columns from `rets_property` schema: `SubdivisionName`, `ArchitecturalStyle`, `StructureType`, `PropertyCondition`, `HighSchoolDistrict`, `AssociationFee`, `AssociationFeeFrequency`, `AssociationName`, `AssociationAmenities`, `Cooling`, `Heating`, `WaterSource`, `Roof`, `View`, `FireplaceFeatures`, `InteriorFeatures`, `PatioAndPorchFeatures`, `PoolFeatures`, `CommunityFeatures`, `SecurityFeatures`, `SpaFeatures`, `LotFeatures`, `Appliances`, `Fencing`, `garageCapacity` (`L_Keyword5`), `OnMarketDate`, `ListAgentFullName`, `officeName` (`LO1_OrganizationName`), `ListingTerms`, `Disclosures`, `SpecialListingConditions`, `OccupantType`, `RoomType`.
+  - Removed 8 requested columns from `PROPERTY_DETAIL_COLUMNS`: `LotSizeAcres`, `LotSizeSquareFeet`, `StoriesTotal`, `MainLevelBedrooms`, `BathroomsHalf`, `CountyOrParish`, `CommonWalls`, `CommonInterest`.
+- **Backend — RESO Concatenated String Formatting (`formatValueString`):**
+  - Added `formatValueString()` helper function to split PascalCase and normalize comma spacing (e.g. `"CentralAir,EnergyStarQualifiedEquipment"` $\rightarrow$ `"Central Air, Energy Star Qualified Equipment"`, `"BedroomOnMainLevel,EntranceFoyer"` $\rightarrow$ `"Bedroom On Main Level, Entrance Foyer"`).
+  - Maintained `RAW_STRING_FIELDS` set (`listingId`, `displayId`, `address`, `city`, `state`, `zipCode`, `description`, `photos`, `status`, `parcelNumber`, `latitude`, `longitude`) to preserve raw format for paths, IDs, descriptions, and addresses.
+- **Backend — On Market Date Formatting:**
+  - Formatted `onMarketDate` in GET `/api/properties/:id` payload using `toLocaleDateString` to render in human-readable long date format (e.g. `"August 25, 2026"`).
+- **Backend Tests — Expanded `backend/tests/propertyDetail.test.js`:**
+  - Added test cases verifying PascalCase string formatting (`formatValueString`), `RAW_STRING_FIELDS` preservation, `onMarketDate` formatting (`"August 25, 2026"`), and SQL `SELECT` column inclusion/exclusion.
+  - All 95 backend tests across 5 test suites pass cleanly via `npm test`.
+- **Frontend Tests — Created `frontend/src/test/PropertyDetailPage.test.jsx`:**
+  - Added React testing library test suite verifying `PropertyDetailPage` rendering, loading spinner, error state fallback, main property info, dynamic Property Details grid with Title Case labels, open houses schedule, and favorite button toggle interactions.
+  - All 82 frontend unit tests across 13 test suites pass cleanly via `npm test`.
+- **Files**: `backend/src/routes/properties.js`, `backend/tests/propertyDetail.test.js`, `frontend/src/test/PropertyDetailPage.test.jsx`, `docs/FILE_GUIDE.md`, `docs/change_log.md`, `docs/decision_log.md`, `README.md`, `backend/README.md`.
+
 

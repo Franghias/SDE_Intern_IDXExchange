@@ -558,6 +558,26 @@
 - Wrapping `L_City` or `L_State` in `LOWER()` inside the SQL WHERE clause (`LOWER(L_City) = LOWER(?)`) broke B-Tree index accessibility, forcing MySQL into an index range scan on `L_SystemPrice` and memory evaluation of ~21,000 rows (taking ~5.7 seconds).
 - Normalizing user input in JavaScript (`toTitleCase()`) combined with MySQL 8's case-insensitive default collation (`utf8mb4_0900_ai_ci`) allows direct SQL equality (`L_City = ?`), enabling instant index traversal on `idx_city` (~3.2 ms latency, >1,700x speedup).
 
+#### 2026-08-25 — Week 8 & Week 10: Property Detail Column Curation, RESO String Formatting & Unit Test Suite
+
+**Decision: PROPERTY_DETAIL_COLUMNS Array Curation & Targeted Field Exclusions (`properties.js`)**
+- Configured `PROPERTY_DETAIL_COLUMNS` array in `properties.js` to serve as the single source of truth driving the single property endpoint (`GET /api/properties/:id`).
+- Curated columns from `rets_property` SQL schema to return rich real estate data (architectural style, structure type, property condition, HOA details, heating/cooling, water source, roof, view, fireplace/interior/pool/community/security/spa/lot features, appliances, fencing, garage capacity, listing terms, disclosures, room type).
+- Explicitly excluded 8 specific columns (`lotSizeAcres`, `lotSizeSquareFeet`, `storiesTotal`, `mainLevelBedrooms`, `halfBaths`, `countyOrParish`, `commonWalls`, `commonInterest`) to streamline the property detail card view.
+
+**Decision: Server-Side RESO PascalCase String Formatting (`formatValueString`)**
+- RESO/MLS database fields often store raw concatenated PascalCase strings without spaces or with unspaced commas (e.g. `CentralAir,EnergyStarQualifiedEquipment`).
+- Implemented `formatValueString()` in `properties.js` to split PascalCase words and normalize comma spacing prior to JSON serialization.
+- Defined `RAW_STRING_FIELDS` set (`listingId`, `displayId`, `address`, `city`, `state`, `zipCode`, `description`, `photos`, `status`, `parcelNumber`, `latitude`, `longitude`) to preserve raw format for image URLs, descriptions, IDs, and address fields.
+
+**Decision: Long Date Formatting for `onMarketDate`**
+- Formatted `onMarketDate` in `properties.js` using `toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' })` so property detail payloads output formatted dates like `"August 25, 2026"`.
+
+**Decision: Property Detail Unit Testing Strategy (`propertyDetail.test.js` & `PropertyDetailPage.test.jsx`)**
+- Backend: Expanded `propertyDetail.test.js` to verify column selection in SQL queries, string formatting transformation, raw field preservation, and column removals.
+- Frontend: Created `PropertyDetailPage.test.jsx` with Vitest and React Testing Library to test component rendering, loading spinner, error fallback UI, Property Details grid rendering with converted Title Case labels (`toLabel`), open house list, and favorite toggle button interaction.
+- Total unit tests: **95 backend tests** (5 suites) and **82 frontend tests** (13 suites) passing with 100% success rate.
+
 **Decision: Correlated `EXISTS` Subquery over Derived Table `LEFT JOIN (GROUP BY)` (`properties.js`)**
 - Previously, `GET /api/properties` and `POST /api/properties/favorites` executed an inline derived table that aggregated all 4,282 rows of `rets_openhouse` using `GROUP BY L_DisplayId` into an internal temporary table (`Using temporary`) on every request.
 - Replaced with `EXISTS (SELECT 1 FROM rets_openhouse WHERE oh.L_DisplayId = p.L_DisplayId AND ...)` which executes lightweight index lookups on `idx_L_DisplayId` solely for the 20 paginated results, completely eliminating temporary table materialization.

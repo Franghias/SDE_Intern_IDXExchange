@@ -239,9 +239,12 @@ docker exec -i idx-mysql-local mysql -uroot -prootpassword rets < database/03_ad
 #### `GET /api/properties/:id` (Single Property Detail)
 - Uses `PROPERTY_DETAIL_COLUMNS` — a configurable array that maps database column names to API field names (e.g., `{ db: 'L_SystemPrice', alias: 'listPrice' }`).
 - `buildDetailSelect()` generates the SQL `SELECT` clause from this array.
+- Formats concatenated PascalCase string fields using `formatValueString(str)` (e.g., `"CentralAir,EnergyStarQualifiedEquipment"` $\rightarrow$ `"Central Air, Energy Star Qualified Equipment"`).
+- Formats `onMarketDate` using `toLocaleDateString` to long date format (e.g. `"August 25, 2026"`).
 - Returns a single property object or 404 if not found.
 
 **Key helper functions:**
+- **`formatValueString(str)`** — splits PascalCase words and normalizes comma spacing for RESO string fields.
 - **`toTitleCase(str)`** — normalizes city/state names ("portland" → "Portland") so they match the database values.
 - **`isValidListingId(id)`** — checks that an ID is non-empty, numeric, and ≤ 20 characters.
 - **`SORT_WHITELIST`** — maps API sort names to SQL columns (e.g., `price` → `L_SystemPrice`). Any sort field not in this whitelist is rejected, preventing SQL injection through `ORDER BY`.
@@ -313,8 +316,10 @@ All backend tests use **Jest** + **supertest**. They import `app.js` directly (n
 ---
 
 ### `backend/tests/propertyDetail.test.js`
-**Tests scenarios for `GET /api/properties/:id` and `GET /api/properties/:id/openhouses`:**
-- Returns all `PROPERTY_DETAIL_COLUMNS` fields.
+**Tests 24 scenarios for `GET /api/properties/:id` and `GET /api/properties/:id/openhouses`:**
+- Returns configured `PROPERTY_DETAIL_COLUMNS` fields and excludes 8 removed columns.
+- Verifies `formatValueString` formatting for concatenated PascalCase string values and raw string field preservation (`RAW_STRING_FIELDS`).
+- Verifies `onMarketDate` date formatting ("August 25, 2026").
 - Returns 404 for non-existent properties.
 - Returns 400 for invalid IDs (non-numeric, too long).
 - Open house listing, status computation (active/upcoming/expired), `all_data` JSON extraction, date deduplication logic.
@@ -873,6 +878,17 @@ All frontend tests use **Vitest** + **React Testing Library** + **@testing-libra
 - Custom `fallback` prop replaces default UI.
 - Custom `fallbackRender` prop receives error/reset function.
 - `onError` callback is invoked when error is caught.
+
+---
+
+### `frontend/src/test/PropertyDetailPage.test.jsx`
+**Tests 6 scenarios for `PropertyDetailPage`:**
+- Renders loading spinner initially while fetching property details and open houses.
+- Displays error banner and "Back to listings" link when fetching fails.
+- Renders main property price, address, status badge, stats, and description.
+- Renders dynamic "Property Details" grid with Title Case converted labels (`toLabel`) and formatted extra fields.
+- Renders scheduled open houses section when open house events are present.
+- Handles favorite save/unsave toggle button interactions.
 
 ---
 

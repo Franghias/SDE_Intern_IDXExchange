@@ -117,6 +117,85 @@ describe('Week 4 — GET /api/properties/:id', () => {
     expect(sql).not.toContain('1174572339');
     expect(params).toContain('1174572339');
   });
+
+  test('formats onMarketDate to long date format (e.g. August 25, 2026)', async () => {
+    const mockProperty = {
+      listingId: '1174572339',
+      onMarketDate: '2026-08-25',
+    };
+    pool.query.mockResolvedValueOnce([[mockProperty]]);
+
+    const res = await request(app).get('/api/properties/1174572339');
+
+    expect(res.status).toBe(200);
+    expect(res.body.onMarketDate).toBe('August 25, 2026');
+  });
+
+  test('formats PascalCase and comma-separated string fields into readable strings', async () => {
+    const mockProperty = {
+      listingId: '1174572339',
+      cooling: 'CentralAir,EnergyStarQualifiedEquipment',
+      associationAmenities: 'ControlledAccess,MaintenanceGrounds,Management',
+      interiorFeatures: 'BedroomOnMainLevel,EntranceFoyer',
+      roomType: 'BonusRoom,FamilyRoom,Kitchen',
+    };
+    pool.query.mockResolvedValueOnce([[mockProperty]]);
+
+    const res = await request(app).get('/api/properties/1174572339');
+
+    expect(res.status).toBe(200);
+    expect(res.body.cooling).toBe('Central Air, Energy Star Qualified Equipment');
+    expect(res.body.associationAmenities).toBe('Controlled Access, Maintenance Grounds, Management');
+    expect(res.body.interiorFeatures).toBe('Bedroom On Main Level, Entrance Foyer');
+    expect(res.body.roomType).toBe('Bonus Room, Family Room, Kitchen');
+  });
+
+  test('preserves raw string formatting for RAW_STRING_FIELDS', async () => {
+    const mockProperty = {
+      listingId: '1174572339',
+      displayId: '1174572339',
+      address: '123 MainSt',
+      description: 'SingleFamilyResidence in BeverlyHills',
+      photos: '["https://example.com/photo.jpg"]',
+      parcelNumber: '12345ABC',
+      status: 'Active',
+    };
+    pool.query.mockResolvedValueOnce([[mockProperty]]);
+
+    const res = await request(app).get('/api/properties/1174572339');
+
+    expect(res.status).toBe(200);
+    expect(res.body.listingId).toBe('1174572339');
+    expect(res.body.address).toBe('123 MainSt');
+    expect(res.body.description).toBe('SingleFamilyResidence in BeverlyHills');
+    expect(res.body.photos).toBe('["https://example.com/photo.jpg"]');
+    expect(res.body.parcelNumber).toBe('12345ABC');
+  });
+
+  test('SELECT query contains configured PROPERTY_DETAIL_COLUMNS and excludes removed columns', async () => {
+    pool.query.mockResolvedValueOnce([[]]);
+
+    await request(app).get('/api/properties/1174572339');
+
+    const [sql] = pool.query.mock.calls[0];
+    // Check included columns
+    expect(sql).toContain('SubdivisionName AS subdivisionName');
+    expect(sql).toContain('Cooling AS cooling');
+    expect(sql).toContain('Heating AS heating');
+    expect(sql).toContain('AssociationAmenities AS associationAmenities');
+    expect(sql).toContain('InteriorFeatures AS interiorFeatures');
+    expect(sql).toContain('RoomType AS roomType');
+
+    // Check excluded columns
+    expect(sql).not.toContain('LotSizeAcres');
+    expect(sql).not.toContain('LotSizeSquareFeet');
+    expect(sql).not.toContain('StoriesTotal');
+    expect(sql).not.toContain('MainLevelBedrooms');
+    expect(sql).not.toContain('BathroomsHalf');
+    expect(sql).not.toContain('CountyOrParish');
+    expect(sql).not.toContain('CommonWalls');
+    expect(sql).not.toContain('CommonInterest');
+  });
 });
 
 // =========================================================
