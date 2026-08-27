@@ -352,14 +352,28 @@
   .chat-assistant__toggle {
     width: 100%;
     justify-content: center;
+    min-height: 44px;
+    -webkit-tap-highlight-color: transparent;
   }
 
   .chat-assistant__messages {
-    max-height: 260px;
-    padding: 16px;
+    max-height: 280px;
+    padding: 14px;
+    -webkit-overflow-scrolling: touch;
   }
 
   .chat-assistant__message-bubble {
-    max-width: 90%;
+    max-width: 88%;
+  }
+
+  .chat-assistant__input {
+    min-height: 44px;
+    font-size: 0.95rem;
+  }
+
+  .chat-assistant__send-btn {
+    width: 44px;
+    height: 44px;
+    -webkit-tap-highlight-color: transparent;
   }
 }

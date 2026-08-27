@@ -434,3 +434,32 @@
     grid-template-columns: 1fr;
   }
 }
+
+@media (max-width: 480px) {
+  .detail-page {
+    padding: 16px 14px 28px;
+  }
+
+  .detail-page__price {
+    font-size: 1.65rem;
+  }
+
+  .detail-page__address {
+    font-size: 1.1rem;
+  }
+
+  .detail-page__agent-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .detail-page__favorite-btn {
+    min-height: 40px;
+    padding: 8px 14px;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .detail-page__stat-value {
+    font-size: 1.05rem;
+  }
+}

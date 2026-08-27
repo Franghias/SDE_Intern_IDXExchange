@@ -448,7 +448,22 @@
   }
 
   .openhouses-page {
-    padding: 24px 16px 32px;
+    padding: 20px 14px 32px;
+  }
+
+  .openhouses-page__calendar-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 12px;
+  }
+
+  .openhouses-page__calendar-wrapper .rbc-calendar {
+    min-width: 540px;
+  }
+
+  .openhouses-page__range-btn {
+    min-height: 44px;
+    -webkit-tap-highlight-color: transparent;
   }
 }
 

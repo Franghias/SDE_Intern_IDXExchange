@@ -120,18 +120,20 @@
 @media (max-width: 640px) {
   .pagination {
     gap: 4px;
+    flex-wrap: wrap;
   }
 
   .pagination__btn {
-    min-width: 34px;
-    height: 34px;
-    font-size: 0.82rem;
-    padding: 0 6px;
+    min-width: 38px;
+    height: 38px;
+    font-size: 0.85rem;
+    padding: 0 8px;
+    -webkit-tap-highlight-color: transparent;
   }
 
   .pagination-controls {
     flex-direction: column;
-    align-items: stretch;
+    align-items: center;
     gap: 12px;
   }
 

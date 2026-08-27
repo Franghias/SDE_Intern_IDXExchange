@@ -724,3 +724,21 @@
 - Confirmed map iframe rendering remains guarded by `if (!latitude || !longitude) return null;`.
 - Changed `directionsUrl` in `PropertyMap.jsx` to use `encodeURIComponent(address)` (`L_Address` with city/state) instead of raw coordinates so opening Google Maps navigates directly to the street address.
 - Created `.property-map__header` flexbox container placing the "Location" title on the left and the "📍 Get Directions" link on the right side of the same line above the map.
+
+#### 2026-08-27 — Mobile & Smartphone View Optimization
+
+**Decision: Fixed Bottom Navigation Bar on Mobile Screens (`<= 768px`) (`Sidebar.css`)**
+- Replaced horizontally crowded top text buttons with a fixed bottom navigation bar (`.sidebar__nav`) featuring icons (`🏠`, `🔍`, `🤖`, `❤️`, `📅`), compact labels, and live favorite count badges on screens $\le 768\text{px}$.
+- Separated brand logo (`.sidebar__brand`) into a fixed glassmorphic top header bar (`54px`), maintaining clean brand identity while offering single-thumb mobile navigation.
+
+**Decision: Content Padding Offsets & Momentum Scroll Container (`App.css`)**
+- Added `padding-top: 54px; padding-bottom: 74px` to `.app-content` on mobile screens $\le 768\text{px}$ so page content and buttons are never covered by fixed top/bottom headers.
+- Enabled `-webkit-overflow-scrolling: touch` and `overflow-x: hidden` to eliminate horizontal scroll glitches and ensure native momentum scrolling.
+
+**Decision: Touch-Friendly Tap Targets ($\ge 44\text{px}$) & Active Touch Feedback**
+- Standardized touch target sizes ($\ge 44\text{px}$) across favorite heart buttons, filter search/clear actions, sort dropdowns, and chat inputs.
+- Applied `:active { transform: scale(0.98); }` and `-webkit-tap-highlight-color: transparent` across interactive components for native smartphone touch responsiveness.
+
+**Decision: Horizontal Touch Scroll Container for Open Houses Calendar (`OpenHousesPage.css`)**
+- Wrapped `react-big-calendar` in an `overflow-x: auto; -webkit-overflow-scrolling: touch` container on screens $\le 640\text{px}$.
+- Allows smooth horizontal swiping across the monthly calendar grid without forcing document-level horizontal scroll.

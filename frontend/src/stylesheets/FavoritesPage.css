@@ -142,16 +142,24 @@
 
 @media (max-width: 768px) {
   .favorites-page {
-    padding: 24px 20px 36px;
+    padding: 20px 14px 32px;
   }
 
   .favorites-page__header {
     flex-direction: column;
     align-items: flex-start;
+    gap: 14px;
+  }
+
+  .favorites-page__remove-all-btn {
+    min-height: 44px;
+    width: 100%;
+    justify-content: center;
+    -webkit-tap-highlight-color: transparent;
   }
 
   .favorites-page__grid {
     grid-template-columns: 1fr;
-    gap: 20px;
+    gap: 16px;
   }
 }

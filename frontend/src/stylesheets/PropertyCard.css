@@ -8,12 +8,17 @@
   display: block;
   text-decoration: none;
   color: inherit;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .property-card:hover {
   transform: translateY(-6px);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
   color: inherit;
+}
+
+.property-card:active {
+  transform: scale(0.98);
 }
 
 /* Image */
@@ -63,13 +68,13 @@
   position: absolute;
   top: 10px;
   left: 10px;
-  width: 36px;
-  height: 36px;
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
   border: none;
   background: rgba(0, 0, 0, 0.45);
   color: #fff;
-  font-size: 1.2rem;
+  font-size: 1.25rem;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -78,10 +83,11 @@
   transition: transform 0.2s ease, background 0.2s ease;
   line-height: 1;
   padding: 0;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .property-card__favorite-btn:hover {
-  transform: scale(1.15);
+  transform: scale(1.12);
   background: rgba(0, 0, 0, 0.6);
 }
 
@@ -151,4 +157,19 @@
 .property-card__status-badge--inactive {
   background: rgba(239, 68, 68, 0.12);
   color: #dc2626;
+}
+
+@media (max-width: 480px) {
+  .property-card__body {
+    padding: 14px 16px 16px;
+  }
+
+  .property-card__address {
+    font-size: 0.98rem;
+  }
+
+  .property-card__stats {
+    font-size: 0.84rem;
+    gap: 4px;
+  }
 }

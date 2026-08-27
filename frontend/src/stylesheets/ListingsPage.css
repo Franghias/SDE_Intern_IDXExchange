@@ -70,7 +70,16 @@
   }
 
   .listings-page {
-    padding: 24px 16px 32px;
+    padding: 20px 14px 32px;
+  }
+
+  .listings-page__title {
+    font-size: 1.5rem;
+  }
+
+  #pagination-top {
+    margin-top: 40px;
+    margin-bottom: 16px;
   }
 }
 

@@ -11,14 +11,18 @@
   overflow-y: auto;
 }
 
-/* Mobile: sidebar becomes top bar, content takes full width */
+/* Mobile layout adjustments */
 @media (max-width: 768px) {
   .app-layout {
     grid-template-columns: 1fr;
-    grid-template-rows: auto 1fr;
+    grid-template-rows: 1fr;
   }
 
   .app-content {
     grid-column: 1;
+    padding-top: 54px;
+    padding-bottom: 74px;
+    -webkit-overflow-scrolling: touch;
+    overflow-x: hidden;
   }
 }

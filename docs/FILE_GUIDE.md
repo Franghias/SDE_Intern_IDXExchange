@@ -749,23 +749,23 @@ Each component and page has a corresponding CSS file in `frontend/src/stylesheet
 | File | What it styles |
 |---|---|
 | `index.css` | Global CSS reset, base font (Inter from Google Fonts), root CSS variables, body defaults |
-| `App.css` | `.app-layout` CSS Grid (sidebar + content columns), `.app-content` scrollable area |
-| `Sidebar.css` | Fixed sidebar, brand logo, nav links, active state, favorite badge |
+| `App.css` | `.app-layout` CSS Grid (sidebar + content columns), `.app-content` scrollable area, mobile padding offsets (`54px` top, `74px` bottom), momentum scrolling |
+| `Sidebar.css` | Fixed sidebar on desktop; fixed top brand bar + fixed bottom navigation bar on mobile (`<= 768px`) with icons, compact labels, and favorite count badge |
 | `ErrorBoundary.css` | Error recovery UI: centered card, icon, buttons, collapsible details panel |
-| `PropertyCard.css` | Card layout, image wrapper, price badge, open house badge, favorite heart, status badge, hover effects |
+| `PropertyCard.css` | Card layout, image wrapper, price badge, open house badge, favorite heart, status badge, mobile touch active states (`scale(0.98)`), hover effects |
 | `PropertyImageCarousel.css` | Carousel image sizing, prev/next arrows, counter overlay |
-| `PropertyImageGallery.css` | Main image, thumbnail strip, lightbox modal, lightbox navigation |
+| `PropertyImageGallery.css` | Main image, thumbnail strip, lightbox modal, lightbox navigation, mobile touch scrolling |
 | `PropertyMap.css` | Map iframe container, directions link |
-| `PropertyFilters.css` | Filter form grid layout, input styling, chatbot highlight animation (`@keyframes chatFieldHighlight`) |
-| `SortControls.css` | Sort field dropdowns, Sort/Clear buttons |
-| `Pagination.css` | Page number buttons, prev/next buttons, active page, ellipsis |
-| `ChatAssistant.css` | Chat panel toggle, message bubbles (user vs. assistant), input area, loading dots animation |
+| `PropertyFilters.css` | Filter form grid layout, input styling, mobile touch action buttons (`min-height: 44px`), chatbot highlight animation (`@keyframes chatFieldHighlight`) |
+| `SortControls.css` | Sort field dropdowns, Sort/Clear buttons, mobile touch targets |
+| `Pagination.css` | Page number buttons, prev/next buttons, active page, ellipsis, mobile touch button sizes |
+| `ChatAssistant.css` | Chat panel toggle, message bubbles (user vs. assistant), input area, loading dots animation, mobile touch inputs |
 | `IntroductionPage.css` | Hero banner, feature cards, CTA button |
-| `ListingsPage.css` | Page header, results count, property grid layout (CSS Grid with auto-fill) |
+| `ListingsPage.css` | Page header, results count, property grid layout (CSS Grid with auto-fill, 1-column mobile) |
 | `ChatSearchPage.css` | Chat search layout with wider chatbot panel |
-| `FavoritesPage.css` | Favorites header with "Remove All" button, empty state |
-| `OpenHousesPage.css` | Calendar styling, date range selection highlights, filter chip, event card grid |
-| `PropertyDetailPage.css` | Two-column detail layout, gallery column, info column, property details grid, open house list |
+| `FavoritesPage.css` | Favorites header with "Remove All" button, empty state, mobile 1-column layout |
+| `OpenHousesPage.css` | Calendar styling, horizontal touch momentum scroll container (`-webkit-overflow-scrolling: touch`), date range selection highlights, filter chip, event card grid |
+| `PropertyDetailPage.css` | Two-column detail layout, gallery column, info column, property details grid, open house list, mobile responsive stacking |
 
 ---
 

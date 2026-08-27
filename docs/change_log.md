@@ -626,3 +626,19 @@
 - **Documentation — Project Markdown Documentation Sync:**
   - Updated `docs/change_log.md`, `docs/decision_log.md`, `docs/FILE_GUIDE.md`, `docs/FLOW.md`, `FLOW.md`, `frontend/FLOW.md`, `README.md`, `backend/README.md`, and `frontend/README.md` to reflect all architectural, component, API, and layout changes.
 - **Files**: `backend/src/routes/properties.js`, `frontend/src/pages/PropertyDetailPage.jsx`, `frontend/src/stylesheets/PropertyDetailPage.css`, `frontend/src/components/PropertyMap.jsx`, `frontend/src/stylesheets/PropertyMap.css`, `backend/tests/propertyDetail.test.js`, `frontend/src/test/PropertyDetailPage.test.jsx`, `docs/FILE_GUIDE.md`, `docs/FLOW.md`, `FLOW.md`, `frontend/FLOW.md`, `README.md`, `backend/README.md`, `frontend/README.md`, `docs/decision_log.md`, `docs/change_log.md`.
+
+#### 2026-08-27 — Mobile & Smartphone View Optimization
+- **Frontend — App-Like Mobile Navigation Bar (`frontend/src/stylesheets/Sidebar.css`, `frontend/src/stylesheets/App.css`):**
+  - Refactored mobile breakpoint (`@media (max-width: 768px)`) navigation into a fixed top brand header (`.sidebar`) and a fixed bottom navigation bar (`.sidebar__nav`) featuring 5 touchable tabs with icons (`🏠`, `🔍`, `🤖`, `❤️`, `📅`), compact labels, and live favorite count badges.
+  - Configured top (`54px`) and bottom (`74px`) content area padding offsets in `App.css` to prevent content overlap, enabling smooth momentum scrolling (`-webkit-overflow-scrolling: touch`) and horizontal overflow safety (`overflow-x: hidden`).
+- **Frontend — Touch Target Sizing & Active Feedback (`PropertyCard.css`, `PropertyFilters.css`, `SortControls.css`, `Pagination.css`, `FavoritesPage.css`, `ChatAssistant.css`):**
+  - Increased favorite heart buttons (`42px`), search/clear filter action buttons (`min-height: 44px`), sort dropdowns/buttons (`min-height: 40px`), and chat inputs/send buttons (`44px`) to thumb-friendly target sizes.
+  - Added active touch feedback (`:active { transform: scale(0.98); }`) and `-webkit-tap-highlight-color: transparent` across cards, filter controls, pagination, and navigation tabs.
+- **Frontend — Mobile Grid & Component Responsiveness (`ListingsPage.css`, `PropertyDetailPage.css`, `OpenHousesPage.css`, `ChatAssistant.css`):**
+  - Fine-tuned 1-column mobile grids (`<= 640px`) with 14px–16px side paddings across search listings and favorites.
+  - Responsive stacking for price headers, stat boxes, and agent details on Property Detail Page (`<= 480px`).
+  - Enabled horizontal touch momentum scrolling (`-webkit-overflow-scrolling: touch`) for `react-big-calendar` container in `OpenHousesPage.css`.
+  - Adjusted ChatAssistant overlay max-height, message bubble max-width (`88%`), and touch input heights for mobile soft keyboard accessibility.
+- **Verification:**
+  - All 84 frontend unit tests (13 test suites) and 96 backend unit tests (5 test suites) pass cleanly via `npm test` with zero regressions.
+- **Files**: `frontend/src/stylesheets/Sidebar.css`, `frontend/src/stylesheets/App.css`, `frontend/src/stylesheets/ListingsPage.css`, `frontend/src/stylesheets/PropertyCard.css`, `frontend/src/stylesheets/PropertyFilters.css`, `frontend/src/stylesheets/SortControls.css`, `frontend/src/stylesheets/Pagination.css`, `frontend/src/stylesheets/PropertyDetailPage.css`, `frontend/src/stylesheets/OpenHousesPage.css`, `frontend/src/stylesheets/ChatAssistant.css`, `frontend/src/stylesheets/FavoritesPage.css`, `docs/decision_log.md`, `docs/change_log.md`, `docs/FILE_GUIDE.md`, `README.md`, `frontend/README.md`.

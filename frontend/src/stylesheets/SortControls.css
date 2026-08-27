@@ -108,10 +108,12 @@
   .sort-controls {
     flex-direction: column;
     align-items: stretch;
+    gap: 12px;
   }
 
   .sort-controls__fields {
     flex-direction: column;
+    gap: 8px;
   }
 
   .sort-controls__field {
@@ -126,9 +128,20 @@
 
   .sort-controls__select {
     flex: 1;
+    min-height: 40px;
+    font-size: 0.88rem;
   }
 
   .sort-controls__actions {
     justify-content: flex-start;
+    gap: 8px;
+  }
+
+  .sort-controls__sort-btn,
+  .sort-controls__clear-btn {
+    min-height: 40px;
+    padding: 8px 16px;
+    font-size: 0.88rem;
+    -webkit-tap-highlight-color: transparent;
   }
 }
