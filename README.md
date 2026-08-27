@@ -44,8 +44,10 @@ A full-stack real estate listing platform with AI-assisted search filter assista
 │   └── /property/:id → PropertyDetailPage (opens in new tab)     │
 │                         ├── Save / Saved Favorite Button        │
 │                         ├── PropertyImageGallery (lightbox)     │
+│                         ├── Centered Stat Icons (Square Feet)   │
+│                         ├── Listing Agent Info Card             │
 │                         ├── PropertyDetails (dynamic grid)      │
-│                         ├── PropertyMap (Google Maps iframe)    │
+│                         ├── PropertyMap (address directions)    │
 │                         └── Open Houses (active/expired/upcom)  │
 │                                                                 │
 │   useFavorites Hook (localStorage persistence + cross-tab sync) │
@@ -182,7 +184,7 @@ The React app runs on port 3000 with a split-screen dashboard layout: a fixed si
 - `/search` — **Search Page** (property filters + multi-column sort + listings grid + pagination + photo carousels + favorite heart buttons)
 - `/favorites` — **Favorites Page** (view and manage favorited listings, with Remove All button, filters, sort, pagination, and instant card removal)
 - `/openhouses` — **Open Houses Page** (react-big-calendar with range selection, date range filter panel, open house cards with property details, pagination)
-- `/property/:id` — **Property Detail Page** (Save/Saved favorite button, photo gallery + lightbox, dynamic details grid, Google Maps embed, and open house schedule)
+- `/property/:id` — **Property Detail Page** (Save/Saved favorite button, photo gallery + lightbox, centered stat icons with Square Feet label, Listing Agent Information card above Description, dynamic details grid, Google Maps embed with same-line Get Directions address link, and open house schedule)
 
 Favorites state is managed globally by the custom `useFavorites` hook, which persists to `localStorage` and syncs across browser tabs in real time.
 

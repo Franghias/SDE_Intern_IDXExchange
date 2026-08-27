@@ -68,6 +68,10 @@ const PROPERTY_DETAIL_COLUMNS = [
   { db: 'L_Keyword5', alias: 'garageCapacity' },
   { db: 'OnMarketDate', alias: 'onMarketDate' },
   { db: 'ListAgentFullName', alias: 'listAgentFullName' },
+  { db: 'ListAgentOfficePhone', alias: 'listAgentOfficePhone' },
+  { db: 'ListAgentEmail', alias: 'listAgentEmail' },
+  { db: 'ListAgentDirectPhone', alias: 'listAgentDirectPhone' },
+  { db: 'ListOfficeEmail', alias: 'listOfficeEmail' },
   { db: 'LO1_OrganizationName', alias: 'officeName' },
   { db: 'ListingTerms', alias: 'listingTerms' },
   { db: 'Disclosures', alias: 'disclosures' },
@@ -81,7 +85,8 @@ const PROPERTY_DETAIL_COLUMNS = [
  */
 const RAW_STRING_FIELDS = new Set([
   'listingId', 'displayId', 'address', 'city', 'state', 'zipCode',
-  'description', 'photos', 'status', 'parcelNumber', 'latitude', 'longitude'
+  'description', 'photos', 'status', 'parcelNumber', 'latitude', 'longitude',
+  'listAgentFullName', 'listAgentOfficePhone', 'listAgentEmail', 'listAgentDirectPhone', 'listOfficeEmail'
 ]);
 
 /**

@@ -22,7 +22,7 @@ frontend/
 │   ├── utils/
 │   │   ├── format.js                 # Format utilities (formatDate, formatPrice, formatTime, parsePhotos)
 │   │   └── prefetchCache.js          # Promise-based initial page data pre-caching utility
-│   ├── test/                         # Vitest unit & component tests (76 tests across 12 suites)
+│   ├── test/                         # Vitest unit & component tests (84 tests across 13 suites)
 │   │   ├── ChatAssistantPersistence.test.jsx # Per-page chat persistence tests (4 tests)
 │   │   ├── ChatSearchPage.test.jsx   # Dedicated Chat Search Page tests (7 tests)
 │   │   ├── ErrorBoundary.test.jsx    # React Error Boundary & recovery UI tests (8 tests)
@@ -32,6 +32,7 @@ frontend/
 │   │   ├── Pagination.test.jsx       # Pagination tests (14 tests)
 │   │   ├── prefetchCache.test.js     # Promise pre-cache tests (4 tests)
 │   │   ├── propertyApi.test.js       # Property API tests (4 tests)
+│   │   ├── PropertyDetailPage.test.jsx # Property Detail Page tests (8 tests)
 │   │   ├── PropertyFilters.test.jsx  # PropertyFilters tests (4 tests)
 │   │   ├── SortControls.test.jsx     # SortControls tests (7 tests)
 │   │   ├── useFavorites.test.js      # useFavorites hook tests (5 tests)
@@ -46,6 +47,6 @@ frontend/
 - `npm run dev` — Starts Vite development server on `http://localhost:3000` with HMR
 - `npm run build` — Builds production-ready static bundle in `dist/`
 - `npm run preview` — Previews production build locally on `http://localhost:4173`
-- `npm test` — Runs all 76 unit and component tests via Vitest (12 test suites)
+- `npm test` — Runs all 84 unit and component tests via Vitest (13 test suites)
 - `npm run lint` — Runs oxlint fast code linter
 

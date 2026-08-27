@@ -66,8 +66,8 @@ describe('PropertyDetailPage Component', () => {
   });
 
   it('renders loading spinner initially while fetching data', () => {
-    propertyApi.fetchPropertyById.mockImplementation(() => new Promise(() => {}));
-    propertyApi.fetchOpenHouses.mockImplementation(() => new Promise(() => {}));
+    propertyApi.fetchPropertyById.mockImplementation(() => new Promise(() => { }));
+    propertyApi.fetchOpenHouses.mockImplementation(() => new Promise(() => { }));
 
     renderPropertyDetailPage();
     expect(screen.getByText(/Loading property details/i)).toBeInTheDocument();
@@ -85,7 +85,7 @@ describe('PropertyDetailPage Component', () => {
     });
   });
 
-  it('renders main property info, stats, and description', async () => {
+  it('renders main property info, stats with Square Feet, and description', async () => {
     propertyApi.fetchPropertyById.mockResolvedValue(MOCK_PROPERTY_DETAIL);
     propertyApi.fetchOpenHouses.mockResolvedValue({ openHouses: [] });
 
@@ -96,8 +96,50 @@ describe('PropertyDetailPage Component', () => {
       expect(screen.getByText('1461 Laurel Way')).toBeInTheDocument();
       expect(screen.getByText('Beverly Hills, CA 90210')).toBeInTheDocument();
       expect(screen.getByText('Active')).toBeInTheDocument();
+      expect(screen.getByText('Square Feet')).toBeInTheDocument();
+      expect(screen.getByText('3,677')).toBeInTheDocument();
       expect(screen.getByText('Description')).toBeInTheDocument();
       expect(screen.getByText(/Opportunity to reimagine a Classic 70s/i)).toBeInTheDocument();
+    });
+  });
+
+  it('renders Listing Agent Information section above description when present', async () => {
+    const mockPropertyWithAgent = {
+      ...MOCK_PROPERTY_DETAIL,
+      listAgentFullName: 'John Smith',
+      listAgentOfficePhone: '310-555-0199',
+      listAgentEmail: 'john@realty.com',
+      listAgentDirectPhone: '310-555-0188',
+      listOfficeEmail: 'office@realty.com',
+    };
+    propertyApi.fetchPropertyById.mockResolvedValue(mockPropertyWithAgent);
+    propertyApi.fetchOpenHouses.mockResolvedValue({ openHouses: [] });
+
+    renderPropertyDetailPage();
+
+    await waitFor(() => {
+      expect(screen.getByText('Listing Agent Information')).toBeInTheDocument();
+      expect(screen.getByText('John Smith')).toBeInTheDocument();
+      expect(screen.getByText('310-555-0199')).toBeInTheDocument();
+      expect(screen.getByText('john@realty.com')).toBeInTheDocument();
+      expect(screen.getByText('310-555-0188')).toBeInTheDocument();
+      expect(screen.getByText('office@realty.com')).toBeInTheDocument();
+    });
+  });
+
+  it('renders map with directions link encoded with actual address', async () => {
+    propertyApi.fetchPropertyById.mockResolvedValue(MOCK_PROPERTY_DETAIL);
+    propertyApi.fetchOpenHouses.mockResolvedValue({ openHouses: [] });
+
+    renderPropertyDetailPage();
+
+    await waitFor(() => {
+      const directionsBtn = screen.getByRole('link', { name: /Get Directions/i });
+      expect(directionsBtn).toBeInTheDocument();
+      expect(directionsBtn).toHaveAttribute(
+        'href',
+        expect.stringContaining(encodeURIComponent('1461 Laurel Way, Beverly Hills, CA'))
+      );
     });
   });
 
@@ -129,7 +171,7 @@ describe('PropertyDetailPage Component', () => {
     renderPropertyDetailPage();
 
     await waitFor(() => {
-      expect(screen.getByText('Open Houses')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /Open House/i })).toBeInTheDocument();
       expect(screen.getByText('Upcoming')).toBeInTheDocument();
       expect(screen.getByText(/Refreshments served!/i)).toBeInTheDocument();
     });

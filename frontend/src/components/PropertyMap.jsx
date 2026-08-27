@@ -12,11 +12,21 @@ function PropertyMap({ latitude, longitude, address }) {
   if (!latitude || !longitude) return null;
 
   const mapSrc = `https://www.google.com/maps/embed/v1/place?key=${apiKey}&q=${latitude},${longitude}&zoom=15`;
-  const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`;
+  const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}`;
 
   return (
     <div className="property-map" id="property-map">
-      <h3 className="property-map__title">Location</h3>
+      <div className="property-map__header">
+        <h3 className="property-map__title">Location</h3>
+        <a
+          className="property-map__directions"
+          href={directionsUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          📍 Get Directions
+        </a>
+      </div>
       <div className="property-map__container">
         <iframe
           className="property-map__iframe"
@@ -27,14 +37,6 @@ function PropertyMap({ latitude, longitude, address }) {
           title={`Map of ${address || 'property location'}`}
         />
       </div>
-      <a
-        className="property-map__directions"
-        href={directionsUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        📍 Get Directions
-      </a>
     </div>
   );
 }

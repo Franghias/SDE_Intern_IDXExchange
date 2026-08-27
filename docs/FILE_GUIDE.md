@@ -585,12 +585,13 @@ The entire card is an `<a>` tag with `target="_blank"` — clicking opens the de
 ---
 
 ### `frontend/src/components/PropertyMap.jsx`
-**What it does:** Renders a Google Maps embed iframe for a property's location.
+**What it does:** Renders a Google Maps embed iframe for a property's location with a "Get Directions" link header.
 
 **How it works:**
 - Only renders if both `latitude` and `longitude` are provided (returns `null` otherwise).
 - Uses the Google Maps Embed API with the API key from `import.meta.env.VITE_GOOGLE_MAPS_API_KEY`.
-- Shows a "📍 Get Directions" link that opens Google Maps directions in a new tab.
+- Renders a header (`.property-map__header`) placing the "Location" title on the left and a "📍 Get Directions" link on the right on the same line.
+- The "📍 Get Directions" link uses `encodeURIComponent(address)` (`L_Address` with city/state) to open Google Maps directly to the street address in a new tab.
 
 ---
 
@@ -732,7 +733,7 @@ The entire card is an `<a>` tag with `target="_blank"` — clicking opens the de
 1. Reads `:id` from the URL using `useParams()`.
 2. Fetches property details from `GET /api/properties/:id` and open house schedule from `GET /api/properties/:id/openhouses`.
 3. **Left column:** `<PropertyImageGallery>` and a dynamic property details grid (beds, baths, sqft, year built, etc.).
-4. **Right column:** Address, price, "Save / Saved" favorite button, description, and `<PropertyMap>`.
+4. **Right column:** Price, "Save / Saved" favorite button, status badge, address, stats row (Beds, Baths, Square Feet, Year Built with centered SVG icons), dedicated **Listing Agent Information** section placed directly on top of the Description section, property description, and `<PropertyMap>` (with same-line Location header and Get Directions link).
 5. **Open houses section:** Lists all open house events with computed status badges:
    - 🟢 **Active** — event is happening today.
    - 🔵 **Upcoming** — start date is in the future.

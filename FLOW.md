@@ -93,8 +93,10 @@ The application uses a split-screen dashboard architecture (`App.jsx` + `Sidebar
 - **User Flow**:
   1. Route fetches single property via `GET /api/properties/:id` and open house schedules via `GET /api/properties/:id/openhouses`.
   2. **Gallery**: Main photo display with thumbnail bar and full-screen Lightbox modal.
-  3. **Map**: Renders Google Maps Embed iframe using latitude & longitude coordinates.
-  4. **Open House Schedule**: Lists upcoming and past open houses with status badges (`Active`, `Upcoming`, `Expired`).
+  3. **Stats**: Beds, Baths, Square Feet, and Year Built displayed with centered SVG icons in dark container boxes.
+  4. **Listing Agent Information**: Dedicated contact card sitting directly on top of Description section when listing agent details exist (`ListAgentFullName`, phones, emails).
+  5. **Map**: Renders Google Maps Embed iframe with a header placing the "Location" title on the left and a "📍 Get Directions" link (opening Google Maps using `L_Address` street address) on the right side of the same line.
+  6. **Open House Schedule**: Lists upcoming and past open houses with status badges (`Active`, `Upcoming`, `Expired`).
 
 ---
 

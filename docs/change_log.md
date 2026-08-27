@@ -605,4 +605,24 @@
   - All 82 frontend unit tests across 13 test suites pass cleanly via `npm test`.
 - **Files**: `backend/src/routes/properties.js`, `backend/tests/propertyDetail.test.js`, `frontend/src/test/PropertyDetailPage.test.jsx`, `docs/FILE_GUIDE.md`, `docs/change_log.md`, `docs/decision_log.md`, `README.md`, `backend/README.md`.
 
-
+#### 2026-08-26 — Property Listing Agent Details, Centered Stat Icons, Map Directions Address Link & Layout Updates
+- **Backend — Expanded Listing Agent Columns (`backend/src/routes/properties.js`):**
+  - Added `ListAgentFullName` (`listAgentFullName`), `ListAgentOfficePhone` (`listAgentOfficePhone`), `ListAgentEmail` (`listAgentEmail`), `ListAgentDirectPhone` (`listAgentDirectPhone`), and `ListOfficeEmail` (`listOfficeEmail`) to `PROPERTY_DETAIL_COLUMNS`.
+  - Added all listing agent fields to `RAW_STRING_FIELDS` to preserve raw string formatting (avoiding split/mangled email addresses, phone numbers, or names).
+- **Frontend — Listing Agent Information UI (`frontend/src/pages/PropertyDetailPage.jsx`):**
+  - Added listing agent fields to `SPECIAL_FIELDS` to exclude them from the generic details grid.
+  - Built a dedicated "Listing Agent Information" card rendered directly **on top of the Description section** (`#property-description`).
+- **Frontend — Stat Icons, Centered Box Layout & Label Update (`PropertyDetailPage.jsx` & CSS):**
+  - Added descriptive SVG icons for Beds, Baths, Square Feet, and Year Built.
+  - Changed stat label from `Sqft` to `Square Feet`.
+  - Updated CSS for `.detail-page__stats` and `.detail-page__stat` to align icons, values, and labels vertically and horizontally in the center of the surrounding dark box containers.
+- **Frontend — Map Location Header & Address Directions Link (`PropertyMap.jsx` & CSS):**
+  - Confirmed map rendering remains guarded by `if (!latitude || !longitude) return null;`.
+  - Updated `directionsUrl` so opening Google Maps ("Get Directions") uses `encodeURIComponent(address)` (the actual street address `L_Address`) instead of coordinates.
+  - Placed "Get Directions" link on the right side of the same line as the "Location" header using a flexbox container (`.property-map__header`).
+- **Tests — Updated Test Coverage (`propertyDetail.test.js` & `PropertyDetailPage.test.jsx`):**
+  - Backend: Added assertions verifying SQL inclusion and raw string response formatting for all listing agent fields. (96 backend tests passed).
+  - Frontend: Added test cases for Listing Agent Information section rendering, "Square Feet" label, and address-encoded Google Maps link. (84 frontend tests passed across 13 test suites).
+- **Documentation — Project Markdown Documentation Sync:**
+  - Updated `docs/change_log.md`, `docs/decision_log.md`, `docs/FILE_GUIDE.md`, `docs/FLOW.md`, `FLOW.md`, `frontend/FLOW.md`, `README.md`, `backend/README.md`, and `frontend/README.md` to reflect all architectural, component, API, and layout changes.
+- **Files**: `backend/src/routes/properties.js`, `frontend/src/pages/PropertyDetailPage.jsx`, `frontend/src/stylesheets/PropertyDetailPage.css`, `frontend/src/components/PropertyMap.jsx`, `frontend/src/stylesheets/PropertyMap.css`, `backend/tests/propertyDetail.test.js`, `frontend/src/test/PropertyDetailPage.test.jsx`, `docs/FILE_GUIDE.md`, `docs/FLOW.md`, `FLOW.md`, `frontend/FLOW.md`, `README.md`, `backend/README.md`, `frontend/README.md`, `docs/decision_log.md`, `docs/change_log.md`.

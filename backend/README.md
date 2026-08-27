@@ -19,7 +19,7 @@ backend/
 │       ├── health.js          # GET /api/health — database connectivity check (sanitized error response)
 │       ├── properties.js      # GET /api/properties (search, sort, hasOpenHouse via EXISTS),
 │       │                      # POST /api/properties/favorites (IDs list search),
-│       │                      # GET /api/properties/:id (configurable columns),
+│       │                      # GET /api/properties/:id (configurable columns including listing agent fields),
 │       │                      # GET /api/properties/:id/openhouses (status + validation)
 │       ├── openhouses.js      # GET /api/openhouses (date range, exact city/state filters, sort, INNER JOIN, pagination)
 │       └── chat.js            # POST /api/chat — OpenRouter LLM proxy endpoint with security prompt & sanitized error logs
@@ -118,7 +118,7 @@ Queries properties where `p.L_DisplayId IN (...)` combining all search filters, 
 
 Returns the property object or 404. Looks up by `L_DisplayId`.
 
-The SELECT clause is built dynamically from the `PROPERTY_DETAIL_COLUMNS` array at the top of `src/routes/properties.js` including `StandardStatus`. Concatenated RESO strings are formatted via `formatValueString()` and `onMarketDate` is formatted to long date format (e.g., `"August 25, 2026"`).
+The SELECT clause is built dynamically from the `PROPERTY_DETAIL_COLUMNS` array at the top of `src/routes/properties.js` including `StandardStatus` and listing agent contact fields (`ListAgentFullName`, `ListAgentOfficePhone`, `ListAgentEmail`, `ListAgentDirectPhone`, `ListOfficeEmail`). Concatenated RESO strings are formatted via `formatValueString()` while raw fields and emails/phones are preserved in `RAW_STRING_FIELDS`. `onMarketDate` is formatted to long date format (e.g., `"August 25, 2026"`).
 
 ### `GET /api/openhouses` — Open House Calendar & Search
 

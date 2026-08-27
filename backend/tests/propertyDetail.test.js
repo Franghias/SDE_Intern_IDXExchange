@@ -185,6 +185,11 @@ describe('Week 4 — GET /api/properties/:id', () => {
     expect(sql).toContain('AssociationAmenities AS associationAmenities');
     expect(sql).toContain('InteriorFeatures AS interiorFeatures');
     expect(sql).toContain('RoomType AS roomType');
+    expect(sql).toContain('ListAgentFullName AS listAgentFullName');
+    expect(sql).toContain('ListAgentOfficePhone AS listAgentOfficePhone');
+    expect(sql).toContain('ListAgentEmail AS listAgentEmail');
+    expect(sql).toContain('ListAgentDirectPhone AS listAgentDirectPhone');
+    expect(sql).toContain('ListOfficeEmail AS listOfficeEmail');
 
     // Check excluded columns
     expect(sql).not.toContain('LotSizeAcres');
@@ -195,6 +200,27 @@ describe('Week 4 — GET /api/properties/:id', () => {
     expect(sql).not.toContain('CountyOrParish');
     expect(sql).not.toContain('CommonWalls');
     expect(sql).not.toContain('CommonInterest');
+  });
+
+  test('returns agent contact fields as raw strings without PascalCase splitting', async () => {
+    const mockProperty = {
+      listingId: '1174572339',
+      listAgentFullName: 'JaneDoe',
+      listAgentOfficePhone: '555-0199',
+      listAgentEmail: 'Jane.Doe@agency.com',
+      listAgentDirectPhone: '555-0188',
+      listOfficeEmail: 'info@agency.com',
+    };
+    pool.query.mockResolvedValueOnce([[mockProperty]]);
+
+    const res = await request(app).get('/api/properties/1174572339');
+
+    expect(res.status).toBe(200);
+    expect(res.body.listAgentFullName).toBe('JaneDoe');
+    expect(res.body.listAgentOfficePhone).toBe('555-0199');
+    expect(res.body.listAgentEmail).toBe('Jane.Doe@agency.com');
+    expect(res.body.listAgentDirectPhone).toBe('555-0188');
+    expect(res.body.listOfficeEmail).toBe('info@agency.com');
   });
 });
 

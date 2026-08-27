@@ -704,3 +704,23 @@
 - Updated `backend/src/config/db.js` to dynamically detect connection URL strings (`MYSQL_URL`, `MYSQL_PUBLIC_URL`, `DATABASE_URL`, `DB_URL`) and pass them to `mysql2/promise` connection pool.
 - Added fallback checking for Railway's default discrete environment variables (`MYSQLHOST`, `MYSQLUSER`, `MYSQLPASSWORD`, `MYSQLDATABASE`, `MYSQLPORT`) before defaulting to local dev variables (`DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_PORT`).
 - Maintains 100% backward compatibility for local development (`npm run dev` and `docker-compose`) while enabling zero-config cloud deployments on Railway / Render.
+
+#### 2026-08-26 — Property Listing Agent Details, Centered Stat Icons, Map Directions Address Link & Layout Updates
+
+**Decision: Inclusion of Full Agent Contact Fields in `PROPERTY_DETAIL_COLUMNS` & `RAW_STRING_FIELDS` (`properties.js`)**
+- Added `ListAgentFullName`, `ListAgentOfficePhone`, `ListAgentEmail`, `ListAgentDirectPhone`, and `ListOfficeEmail` to `PROPERTY_DETAIL_COLUMNS` in `properties.js`.
+- Added all agent fields to `RAW_STRING_FIELDS` so string formatting logic (`formatValueString`) preserves email addresses, phone numbers, and agent names without word-splitting.
+
+**Decision: Dedicated "Listing Agent Information" Card Above Description (`PropertyDetailPage.jsx`)**
+- Excluded agent fields from generic Property Details grid by registering them in `SPECIAL_FIELDS`.
+- Created a structured "Listing Agent Information" card rendered directly **on top of the Description section** when agent details are present, providing easy contact access for buyers.
+
+**Decision: Centered Stat Box Icons & "Square Feet" Labeling (`PropertyDetailPage.jsx` & `PropertyDetailPage.css`)**
+- Added descriptive SVG icons to Beds, Baths, Square Feet, and Year Built stat boxes.
+- Updated label from `Sqft` to `Square Feet`.
+- Styled `.detail-page__stats` and `.detail-page__stat` using flexbox vertical and horizontal centering (`align-items: center; justify-content: center; text-align: center`) so stat icons, values, and labels sit perfectly centered inside the dark container box.
+
+**Decision: Address-Based Google Maps Link (`L_Address`) & Flex Header Layout (`PropertyMap.jsx` & `PropertyMap.css`)**
+- Confirmed map iframe rendering remains guarded by `if (!latitude || !longitude) return null;`.
+- Changed `directionsUrl` in `PropertyMap.jsx` to use `encodeURIComponent(address)` (`L_Address` with city/state) instead of raw coordinates so opening Google Maps navigates directly to the street address.
+- Created `.property-map__header` flexbox container placing the "Location" title on the left and the "📍 Get Directions" link on the right side of the same line above the map.

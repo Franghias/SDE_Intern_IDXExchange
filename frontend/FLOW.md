@@ -206,7 +206,7 @@ sequenceDiagram
 
     API-->>DP: Return [ propertyData, openHouseData ]
     DP->>DP: Filter extraFields (columns not in SPECIAL_FIELDS set)
-    DP-->>User: Render Image Gallery (lightbox), Dynamic Details Grid,<br/>Info Column (Save button), Google Maps iframe, & Open Houses Schedule
+    DP-->>User: Render Image Gallery (lightbox), Dynamic Details Grid,<br/>Info Column (Save button), Centered Stat Icons (Square Feet), Listing Agent Info,<br/>Location Header with Address Directions link, Google Maps iframe, & Open Houses Schedule
 ```
 
 ---

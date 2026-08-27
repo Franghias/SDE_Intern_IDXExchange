@@ -3,11 +3,18 @@
   margin-top: 32px;
 }
 
+.property-map__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
 .property-map__title {
   font-size: 1.2rem;
   font-weight: 600;
   color: var(--color-text);
-  margin: 0 0 16px;
+  margin: 0;
 }
 
 .property-map__container {
@@ -28,10 +35,9 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  margin-top: 12px;
   color: var(--color-primary);
   font-weight: 500;
-  font-size: 0.95rem;
+  font-size: 1.1rem;
   transition: color 0.2s ease;
 }
 
