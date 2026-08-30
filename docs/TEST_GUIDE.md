@@ -6,8 +6,8 @@ This document provides a comprehensive, file-by-file breakdown of **every test f
 
 ## 1. Testing Overview & Summary
 
-The project maintains **180 automated tests** with a 100% pass rate:
-- **Backend**: **96 tests** across **5 test suites** using **Jest** + **supertest**.
+The project maintains **184 automated tests** with a 100% pass rate:
+- **Backend**: **100 tests** across **5 test suites** using **Jest** + **supertest**.
 - **Frontend**: **84 tests** across **13 test suites** using **Vitest** + **React Testing Library** + **@testing-library/user-event**.
 - **Diagnostic Scripts**: **3 manual performance & benchmark scripts** for database query explain plans and LLM API measurement.
 
@@ -34,7 +34,7 @@ The backend test suite imports the Express `app` directly (from `backend/src/app
 
 ```
 backend/tests/
-├── health.test.js             # 5 tests  — Health check & database connectivity
+├── health.test.js             # 9 tests  — Health check, database connectivity, & CORS whitelisting
 ├── properties.test.js         # 34 tests — Search, filter, multi-sort, pagination, SQL injection, & favorites
 ├── propertyDetail.test.js     # 24 tests — Single property, column selection, string formatting, & open houses
 ├── openhouses.test.js         # 24 tests — Open house listings, date ranges, INNER JOINs, & validation
@@ -43,9 +43,9 @@ backend/tests/
 
 ---
 
-### A. `backend/tests/health.test.js` (5 Tests)
+### A. `backend/tests/health.test.js` (9 Tests)
 
-**Target:** `GET /api/health` ([`backend/src/routes/health.js`](file:///c:/Users/User/Downloads/IDXExchange%20-%20SDE%20Intern/backend/src/routes/health.js))  
+**Target:** `GET /api/health` ([`backend/src/routes/health.js`](file:///c:/Users/User/Downloads/IDXExchange%20-%20SDE%20Intern/backend/src/routes/health.js)) & CORS Security ([`backend/src/app.js`](file:///c:/Users/User/Downloads/IDXExchange%20-%20SDE%20Intern/backend/src/app.js))  
 **Mocking:** Replaces `backend/src/config/db.js` connection pool `query` method.
 
 | Test Scenario | Description & Assertion |
@@ -55,6 +55,10 @@ backend/tests/
 | `returns 500 when database is down` | Rejects `pool.query` with `ECONNREFUSED` and asserts status is `500` with `{ status: "error" }`. |
 | `includes error message in 500 response` | Verifies that database connection error messages are safely returned without crashing the process. |
 | `returns 404 for undefined routes` | Dispatches `GET /api/nonexistent` and validates Express 404 handler. |
+| `allows authorized canonical Vercel origin` | Verifies `Origin: https://propertysearchsdeintern.vercel.app` receives `200` and `Access-Control-Allow-Origin`. |
+| `allows authorized Vercel preview deployment origin` | Verifies `Origin: https://propertysearchsdeintern-hsujzxyf0-franghias-projects.vercel.app` is permitted. |
+| `allows authorized local dev origins` | Verifies `Origin: http://localhost:5173` is permitted. |
+| `rejects unauthorized third-party origins` | Verifies `Origin: https://malicious-site.example.com` receives `403 Forbidden` with CORS blocked message. |
 
 ---
 

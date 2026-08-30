@@ -778,3 +778,15 @@
 **Decision: Targeted Element Scrolling over Window Top Scrolling (`*.jsx`)**
 - Previously, applying sort or changing pages dispatched `window.scrollTo({ top: 0, behavior: 'smooth' })`, which pulled the user's viewport all the way above headers and filters on long pages.
 - Replaced with element-level smooth scrolling targeting `#sort-controls` on sort changes and `#pagination-top` on pagination page transitions, keeping the user anchored to relevant content.
+
+#### 2026-08-30 — Backend Render CORS Security Hardening & Vercel Origin Whitelisting
+
+**Decision: Strict Whitelist & Pattern-Based CORS Origin Enforcement (`backend/src/app.js`)**
+- Default `cors()` middleware enables open `Access-Control-Allow-Origin: *`, which permits any unauthorized third-party website to make cross-origin requests to the Render backend API.
+- Implemented a secure origin validator in `backend/src/app.js` with:
+  1. Whitelisted canonical production domain: `https://propertysearchsdeintern.vercel.app`.
+  2. Whitelisted preview deployment snapshot: `https://propertysearchsdeintern-hsujzxyf0-franghias-projects.vercel.app`.
+  3. Dynamic regex pattern: `/^https:\/\/propertysearchsdeintern.*\.vercel\.app$/` to safely allow future feature branch/PR preview deployments under your Vercel team without requiring manual backend redeployments.
+  4. Local development ports (`localhost:5173`, `localhost:3000`).
+  5. Permission for requests with no `Origin` header (such as Vercel serverless edge rewrites proxying `/api/*`, server-to-server calls, curl, and health monitors).
+- Unauthorized origins are rejected with `403 Forbidden` and a sanitized error payload.

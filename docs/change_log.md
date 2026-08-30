@@ -689,3 +689,17 @@
 - **Verification:**
   - Full Vitest suite executed (`npx vitest run`): **84 passed (84 tests)** across **13 test files** with 100% success rate.
 - **Files**: `frontend/src/pages/PropertyDetailPage.jsx`, `frontend/src/stylesheets/PropertyDetailPage.css`, `frontend/src/components/PropertyImageGallery.jsx`, `frontend/src/stylesheets/PropertyImageGallery.css`, `frontend/src/pages/ListingsPage.jsx`, `frontend/src/pages/FavoritesPage.jsx`, `frontend/src/pages/OpenHousesPage.jsx`, `frontend/src/pages/ChatSearchPage.jsx`, `frontend/src/test/setup.js`, `frontend/FLOW.md`, `FLOW.md`, `docs/change_log.md`, `docs/decision_log.md`.
+
+#### 2026-08-30 — Backend Render CORS Security Hardening & Vercel Origin Whitelisting
+- **Backend — Secure Origin-Whitelisting CORS Middleware (`backend/src/app.js`, `backend/.env.example`):**
+  - Replaced open `cors()` middleware with restrictive whitelist validation supporting canonical production domain (`https://propertysearchsdeintern.vercel.app`), specific preview deployment (`https://propertysearchsdeintern-hsujzxyf0-franghias-projects.vercel.app`), dynamic regex matching for all future Vercel preview branch deployments (`^https:\/\/propertysearchsdeintern.*\.vercel\.app$`), and local dev origins (`http://localhost:5173`, `http://localhost:3000`).
+  - Added support for `ALLOWED_ORIGINS` environment variable override for custom staging/production domains.
+  - Added centralized error handler responding with `403 Forbidden` and sanitized error message on unauthorized cross-origin requests.
+  - Added 4 automated unit tests in `backend/tests/health.test.js` validating production origin acceptance, preview origin acceptance, local dev acceptance, and third-party origin rejection (bringing backend test suite to 100 tests).
+- **Documentation — Cloud Deployment & Test Guide Updates:**
+  - Updated [`docs/CLOUD_DEPLOYMENT_GUIDE.md`](file:///c:/Users/User/Downloads/IDXExchange%20-%20SDE%20Intern/docs/CLOUD_DEPLOYMENT_GUIDE.md) Section 2 with `ALLOWED_ORIGINS` configuration.
+  - Updated [`docs/TEST_GUIDE.md`](file:///c:/Users/User/Downloads/IDXExchange%20-%20SDE%20Intern/docs/TEST_GUIDE.md) documenting 100 backend tests across 5 test suites.
+  - Updated `docs/change_log.md` and `docs/decision_log.md`.
+- **Verification:**
+  - 100 backend unit tests (5 test suites) and 84 frontend unit tests (13 test suites) pass cleanly via `npm test` with 100% success rate (184 total tests).
+- **Files**: `backend/src/app.js`, `backend/.env.example`, `backend/tests/health.test.js`, `docs/CLOUD_DEPLOYMENT_GUIDE.md`, `docs/TEST_GUIDE.md`, `docs/change_log.md`, `docs/decision_log.md`.

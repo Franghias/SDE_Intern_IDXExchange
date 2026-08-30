@@ -80,3 +80,42 @@ describe('Week 2 — Unknown routes', () => {
     expect(res.status).toBe(404);
   });
 });
+
+describe('CORS Origin Security & Whitelisting', () => {
+  test('allows authorized canonical Vercel production origin', async () => {
+    const res = await request(app)
+      .get('/api/health')
+      .set('Origin', 'https://propertysearchsdeintern.vercel.app');
+
+    expect(res.status).toBe(200);
+    expect(res.headers['access-control-allow-origin']).toBe('https://propertysearchsdeintern.vercel.app');
+  });
+
+  test('allows authorized Vercel preview deployment origin', async () => {
+    const res = await request(app)
+      .get('/api/health')
+      .set('Origin', 'https://propertysearchsdeintern-hsujzxyf0-franghias-projects.vercel.app');
+
+    expect(res.status).toBe(200);
+    expect(res.headers['access-control-allow-origin']).toBe('https://propertysearchsdeintern-hsujzxyf0-franghias-projects.vercel.app');
+  });
+
+  test('allows authorized local development origins', async () => {
+    const res = await request(app)
+      .get('/api/health')
+      .set('Origin', 'http://localhost:5173');
+
+    expect(res.status).toBe(200);
+    expect(res.headers['access-control-allow-origin']).toBe('http://localhost:5173');
+  });
+
+  test('rejects unauthorized third-party origins with 403 Forbidden', async () => {
+    const res = await request(app)
+      .get('/api/health')
+      .set('Origin', 'https://malicious-site.example.com');
+
+    expect(res.status).toBe(403);
+    expect(res.body.status).toBe('error');
+    expect(res.body.message).toContain('CORS blocked');
+  });
+});

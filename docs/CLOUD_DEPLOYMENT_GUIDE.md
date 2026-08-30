@@ -70,10 +70,12 @@ mysql -h <MYSQLHOST> -P <MYSQLPORT> -u <MYSQLUSER> -p<MYSQLPASSWORD> <MYSQLDATAB
    | `DB_NAME` (or `MYSQLDATABASE`) | `railway` | Railway Database Name |
    | `LLM_API_KEY` | `<Your OpenRouter API Key>` | Secret key for AI Assistant |
    | `LLM_MODEL` | `cohere/north-mini-code:free` | Selected LLM Model |
+   | `ALLOWED_ORIGINS` | `https://propertysearchsdeintern.vercel.app,https://propertysearchsdeintern-hsujzxyf0-franghias-projects.vercel.app` | Comma-separated CORS allowed origins |
 
+   *(Note: `backend/src/app.js` enforces secure origin whitelisting for your Vercel production domain, preview branches, and local dev, while rejecting unauthorized third-party cross-origin requests).*
    *(Note: `backend/src/config/db.js` automatically prioritizes `MYSQL_URL` / `MYSQL_PUBLIC_URL` / `DATABASE_URL` if present, then checks Railway standard variables `MYSQLHOST`/`MYSQLUSER`/etc., and falls back to `DB_HOST`/`DB_USER`/etc. for local dev).*
 6. Click **Create Web Service**.
-7. Once deployed, copy your Render backend URL (e.g., `https://idxexchange-backend.onrender.com`).
+7. Once deployed, copy your Render backend URL (e.g., `https://sde-intern-idxexchange.onrender.com`).
 
 ---
 
