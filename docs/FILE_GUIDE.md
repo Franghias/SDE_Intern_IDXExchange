@@ -943,6 +943,11 @@ All frontend tests use **Vitest** + **React Testing Library** + **@testing-libra
 
 ---
 
+### `docs/TEST_GUIDE.md`
+**What it does:** Comprehensive testing guide detailing all 180 automated backend and frontend tests, test runners (Jest, Vitest, RTL), mocking strategies, individual test scenarios, and manual database query diagnostic scripts.
+
+---
+
 ### `frontend/vercel.json`
 **What it does:** Vercel deployment configuration file handling API rewrites (`/api/*` $\rightarrow$ Render backend URL) and SPA client-side routing fallback (`/*` $\rightarrow$ `/index.html`).
 

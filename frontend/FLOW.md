@@ -65,8 +65,7 @@ The parent container `.app-layout` is a CSS Grid with two columns: `260px` and `
 
 - `.sidebar` is `position: fixed; width: 260px;`.
 - `<main className="app-content">` is placed into the **second grid column** with `grid-column: 2;`.
-- The content canvas spans the remaining width and scrolls vertically independently.
-- **Centered Layout & Responsive Auto-Grid**: Page containers (`.intro-page`, `.detail-page`, `.favorites-page`, `.listings-page`, `.openhouses-page`, `.chat-search-page`) apply `margin: 0 auto` with max-width caps (`960px` to `1600px`). Property grids use responsive auto-filling (`repeat(auto-fill, minmax(320px, 1fr))`) to dynamically scale from 1 to 4 columns across monitor sizes, ensuring no uncentered right-side dark voids.
+- **Centered Layout & Responsive Auto-Grid**: All page containers (`.intro-page`, `.detail-page`, `.favorites-page`, `.listings-page`, `.openhouses-page`, `.chat-search-page`) apply `padding: 40px 40px 48px; max-width: 1600px; margin: 0 auto;` to expand across the full content canvas uniformly. Property grids use responsive auto-filling (`repeat(auto-fill, minmax(320px, 1fr))`) to dynamically scale from 1 to 4 columns across monitor sizes, ensuring no uncentered right-side dark voids.
 
 ### Mobile View ($\le 768\text{px}$)
 - **Sidebar Collapse**: The fixed left sidebar transitions into a fixed top brand bar (`54px`) and a fixed bottom navigation bar (`64px`) with backdrop blur (`blur(16px)`), touch-optimized navigation buttons, and a live favorite counter badge.

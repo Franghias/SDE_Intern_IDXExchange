@@ -1,7 +1,7 @@
 /* ===== Introduction Page ===== */
 .intro-page {
-  padding: 48px 40px;
-  max-width: 960px;
+  padding: 40px 40px 48px;
+  max-width: 1600px;
   margin: 0 auto;
 }
 
@@ -30,7 +30,7 @@
   font-size: 1.15rem;
   line-height: 1.7;
   color: var(--color-text-muted);
-  max-width: 560px;
+  max-width: 720px;
   margin: 0 0 32px;
 }
 

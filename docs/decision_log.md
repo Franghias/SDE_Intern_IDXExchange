@@ -743,12 +743,12 @@
 - Wrapped `react-big-calendar` in an `overflow-x: auto; -webkit-overflow-scrolling: touch` container on screens $\le 640\text{px}$.
 - Allows smooth horizontal swiping across the monthly calendar grid without forcing document-level horizontal scroll.
 
-#### 2026-08-30 — Page Container Centering, Responsive Grid Auto-Filling & Mobile Sort Redesign
+#### 2026-08-30 — Full-Canvas Page Expansion (1600px), Responsive Grid Auto-Filling & Mobile Sort Redesign
 
-**Decision: Centering Page Containers with `margin: 0 auto` and Capped Max-Widths (`*.css`)**
-- On desktop monitors (>1200px), `.app-layout` allocates `260px` for `.sidebar` and `1fr` (~1180px–1660px+) for `.app-content`.
-- When page containers (`.intro-page`, `.detail-page`, `.favorites-page`, `.listings-page`, `.openhouses-page`, `.chat-search-page`) specified a `max-width` (960px–1600px) without `margin: 0 auto`, elements defaulted to left alignment, leaving wide empty dark-space gaps on the right side of the screen.
-- Applied `margin: 0 auto;` across all page containers so content is centered harmoniously within the content canvas across all monitor resolutions.
+**Decision: Unified Full-Canvas Page Expansion with `max-width: 1600px` and `margin: 0 auto` (`*.css`)**
+- On wide desktop monitors (>1200px), `.app-layout` allocates `260px` for `.sidebar` and `1fr` (~1180px–1660px+) for `.app-content`.
+- Rather than constraining Introduction (`960px`), Property Detail (`1200px`), or Favorites (`1400px`) to narrower widths, all page containers (`.intro-page`, `.detail-page`, `.favorites-page`, `.listings-page`, `.openhouses-page`, `.chat-search-page`) were unified to `padding: 40px 40px 48px; max-width: 1600px; margin: 0 auto;`.
+- Ensures visual consistency across the application so navigating between Search, Introduction, AI Search, Open Houses, Favorites, and Property Details provides an expansive, centered, and balanced presentation.
 
 **Decision: Dynamic Auto-Filling Grid Columns (`repeat(auto-fill, minmax(320px, 1fr))`) over Hardcoded 3-Column Templates**
 - Hardcoded 3-column definitions (`repeat(3, 1fr)`) stretched cards unnaturally on ultra-wide screens and squeezed them on intermediate widths (900px–1200px).
