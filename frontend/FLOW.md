@@ -72,6 +72,16 @@ The parent container `.app-layout` is a CSS Grid with two columns: `260px` and `
 - **Content Padding Offset**: `.app-content` occupies 100% width with `padding-top: 54px; padding-bottom: 74px; overflow-x: hidden; -webkit-overflow-scrolling: touch;`.
 - **Sort Controls**: Enclosed in a themed card with title and live active badge (`X active`). Fields dynamically arrange into a compact **2-column grid** (`repeat(2, 1fr)`) with uppercase labels above inputs, active selection border glow, and full-width side-by-side action buttons (`Apply Sort` & `Clear`) with 42px touch targets.
 - **Filters & Modals**: Filter forms switch to stacked inputs or 2-column grids with 44px touch tap targets.
+- **Detail Page Mobile Flow**: Uses `display: contents` and flexbox `order` on screens $\le 900\text{px}$ to establish a seamless top-to-bottom reading sequence:
+  1. **Picture**: `PropertyImageGallery` (supports touch swiping left/right, overlay prev/next buttons, and photo counter badge)
+  2. **Open House**: Scheduled open houses list (`#open-houses`)
+  3. **Overall Content**: Price, Save button, Status badge, Address, Stats box (Beds/Baths/Sqft/YearBuilt), and Listing Agent card (`.detail-page__main-info`)
+  4. **Property Details**: Dynamic RESO details grid (`#property-details`)
+  5. **Description**: Remarks / Description text (`#property-description`)
+  6. **Location**: Google Map with address-encoded directions link (`#property-location` / `PropertyMap`)
+- **Targeted Scroll Automation**:
+  - Clicking "Apply Sort" triggers smooth scroll directly to `#sort-controls`.
+  - Changing pages via `<Pagination />` triggers smooth scroll directly to `#pagination-top`.
 
 ---
 

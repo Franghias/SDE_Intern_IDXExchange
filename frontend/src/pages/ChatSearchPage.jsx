@@ -126,7 +126,12 @@ function ChatSearchPage() {
 
   function handlePageChange(page) {
     setCurrentPage(page);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const pagElem = document.getElementById('pagination-top');
+    if (pagElem) {
+      pagElem.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
     loadProperties(activeFilters, page, itemsPerPage);
   }
 

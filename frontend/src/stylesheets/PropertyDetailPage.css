@@ -411,15 +411,71 @@
   max-width: 400px;
 }
 
-/* Responsive: stack to single column on smaller screens */
+/* Responsive: mobile top-to-bottom sequence:
+   1. Picture (Gallery)
+   2. Open House
+   3. Overall content (Price, Stats, Agent)
+   4. Property Details
+   5. Description
+   6. Location (Map) */
 @media (max-width: 900px) {
-  .detail-page__layout {
-    grid-template-columns: 1fr;
-    gap: 28px;
+  .detail-page {
+    display: flex;
+    flex-direction: column;
+    padding: 24px 20px 36px;
   }
 
-  .detail-page {
-    padding: 24px 20px 36px;
+  .detail-page__back-link {
+    order: 0;
+  }
+
+  .detail-page__layout {
+    display: contents;
+  }
+
+  .detail-page__gallery-col,
+  .detail-page__info-col {
+    display: contents;
+  }
+
+  /* 1. Picture / Gallery */
+  .gallery {
+    order: 1;
+    margin-bottom: 24px;
+  }
+
+  /* 2. Open House */
+  #open-houses {
+    order: 2;
+    margin-top: 0;
+    margin-bottom: 28px;
+  }
+
+  /* 3. Overall Content */
+  .detail-page__main-info {
+    order: 3;
+    margin-bottom: 20px;
+  }
+
+  /* 4. Property Details */
+  #property-details {
+    order: 4;
+    margin-top: 0;
+    margin-bottom: 28px;
+  }
+
+  /* 5. Description */
+  #property-description {
+    order: 5;
+    margin-top: 0;
+    margin-bottom: 28px;
+  }
+
+  /* 6. Location / Map */
+  #property-location,
+  .property-map {
+    order: 6;
+    margin-bottom: 28px;
   }
 
   .detail-page__stats {

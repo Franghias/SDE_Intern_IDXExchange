@@ -143,122 +143,125 @@ function PropertyDetailPage() {
 
         {/* Right column: Info */}
         <div className="detail-page__info-col">
-          {/* Header row with price and favorite button */}
-          <div className="detail-page__header-row">
-            <h1 className="detail-page__price" id="property-price">
-              {formatPrice(property.listPrice)}
-            </h1>
-            <button
-              className={`detail-page__favorite-btn${favState ? ' detail-page__favorite-btn--active' : ''}`}
-              onClick={() => toggleFavorite(property.displayId)}
-              aria-label={favState ? 'Remove from favorites' : 'Add to favorites'}
-              title={favState ? 'Remove from favorites' : 'Add to favorites'}
-            >
-              <span className="detail-page__favorite-icon">{favState ? '♥' : '♡'}</span>
-              <span>{favState ? 'Saved' : 'Save'}</span>
-            </button>
-          </div>
-
-          {/* Status badge */}
-          {property.status && (
-            <span
-              className={`detail-page__status-badge ${property.status === 'Active'
-                ? 'detail-page__status-badge--active'
-                : 'detail-page__status-badge--inactive'
-                }`}
-            >
-              {property.status}
-            </span>
-          )}
-
-          {/* Address */}
-          <p className="detail-page__address" id="property-address">
-            {property.address}
-          </p>
-          <p className="detail-page__location">
-            {property.city}, {property.state} {property.zipCode}
-          </p>
-
-          {/* Stats */}
-          <div className="detail-page__stats" id="property-stats">
-            <div className="detail-page__stat">
-              <svg className="detail-page__stat-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M2 4v16M2 8h20v12M2 17h20M6 8v3M10 8v3" />
-              </svg>
-              <span className="detail-page__stat-value">{property.beds}</span>
-              <span className="detail-page__stat-label">Beds</span>
+          {/* Overall content of property (price, header, status, address, stats, listing agent) */}
+          <div className="detail-page__main-info" id="property-main-info">
+            {/* Header row with price and favorite button */}
+            <div className="detail-page__header-row">
+              <h1 className="detail-page__price" id="property-price">
+                {formatPrice(property.listPrice)}
+              </h1>
+              <button
+                className={`detail-page__favorite-btn${favState ? ' detail-page__favorite-btn--active' : ''}`}
+                onClick={() => toggleFavorite(property.displayId)}
+                aria-label={favState ? 'Remove from favorites' : 'Add to favorites'}
+                title={favState ? 'Remove from favorites' : 'Add to favorites'}
+              >
+                <span className="detail-page__favorite-icon">{favState ? '♥' : '♡'}</span>
+                <span>{favState ? 'Saved' : 'Save'}</span>
+              </button>
             </div>
-            <div className="detail-page__stat">
-              <svg className="detail-page__stat-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M9 6 6.5 3.5a1.5 1.5 0 0 0-2.12 0 1.5 1.5 0 0 0 0 2.12L7 8" />
-                <path d="M4 12h16a1 1 0 0 1 1 1v3a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4v-3a1 1 0 0 1 1-1Z" />
-                <path d="M6 12V5a2 2 0 0 1 2-2h3" />
-              </svg>
-              <span className="detail-page__stat-value">{property.baths}</span>
-              <span className="detail-page__stat-label">Baths</span>
-            </div>
-            <div className="detail-page__stat">
-              <svg className="detail-page__stat-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="3" width="18" height="18" rx="2" />
-                <path d="M3 9h18M9 3v18" />
-              </svg>
-              <span className="detail-page__stat-value">
-                {property.sqft?.toLocaleString() ?? '—'}
+
+            {/* Status badge */}
+            {property.status && (
+              <span
+                className={`detail-page__status-badge ${property.status === 'Active'
+                  ? 'detail-page__status-badge--active'
+                  : 'detail-page__status-badge--inactive'
+                  }`}
+              >
+                {property.status}
               </span>
-              <span className="detail-page__stat-label">Square Feet</span>
-            </div>
-            {property.yearBuilt && (
+            )}
+
+            {/* Address */}
+            <p className="detail-page__address" id="property-address">
+              {property.address}
+            </p>
+            <p className="detail-page__location">
+              {property.city}, {property.state} {property.zipCode}
+            </p>
+
+            {/* Stats */}
+            <div className="detail-page__stats" id="property-stats">
               <div className="detail-page__stat">
                 <svg className="detail-page__stat-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                  <line x1="16" y1="2" x2="16" y2="6" />
-                  <line x1="8" y1="2" x2="8" y2="6" />
-                  <line x1="3" y1="10" x2="21" y2="10" />
+                  <path d="M2 4v16M2 8h20v12M2 17h20M6 8v3M10 8v3" />
                 </svg>
-                <span className="detail-page__stat-value">{property.yearBuilt}</span>
-                <span className="detail-page__stat-label">Year Built</span>
+                <span className="detail-page__stat-value">{property.beds}</span>
+                <span className="detail-page__stat-label">Beds</span>
+              </div>
+              <div className="detail-page__stat">
+                <svg className="detail-page__stat-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 6 6.5 3.5a1.5 1.5 0 0 0-2.12 0 1.5 1.5 0 0 0 0 2.12L7 8" />
+                  <path d="M4 12h16a1 1 0 0 1 1 1v3a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4v-3a1 1 0 0 1 1-1Z" />
+                  <path d="M6 12V5a2 2 0 0 1 2-2h3" />
+                </svg>
+                <span className="detail-page__stat-value">{property.baths}</span>
+                <span className="detail-page__stat-label">Baths</span>
+              </div>
+              <div className="detail-page__stat">
+                <svg className="detail-page__stat-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                  <path d="M3 9h18M9 3v18" />
+                </svg>
+                <span className="detail-page__stat-value">
+                  {property.sqft?.toLocaleString() ?? '—'}
+                </span>
+                <span className="detail-page__stat-label">Square Feet</span>
+              </div>
+              {property.yearBuilt && (
+                <div className="detail-page__stat">
+                  <svg className="detail-page__stat-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                    <line x1="16" y1="2" x2="16" y2="6" />
+                    <line x1="8" y1="2" x2="8" y2="6" />
+                    <line x1="3" y1="10" x2="21" y2="10" />
+                  </svg>
+                  <span className="detail-page__stat-value">{property.yearBuilt}</span>
+                  <span className="detail-page__stat-label">Year Built</span>
+                </div>
+              )}
+            </div>
+
+            {/* Listing Agent Information (placed on top of Description section) */}
+            {hasAgentInfo && (
+              <div className="detail-page__section" id="listing-agent-info">
+                <h3 className="detail-page__section-title">Listing Agent Information</h3>
+                <div className="detail-page__agent-grid">
+                  {property.listAgentFullName && (
+                    <div className="detail-page__agent-item">
+                      <span className="detail-page__agent-label">Agent Name</span>
+                      <span className="detail-page__agent-value">{property.listAgentFullName}</span>
+                    </div>
+                  )}
+                  {property.listAgentDirectPhone && (
+                    <div className="detail-page__agent-item">
+                      <span className="detail-page__agent-label">Direct Phone</span>
+                      <span className="detail-page__agent-value">{property.listAgentDirectPhone}</span>
+                    </div>
+                  )}
+                  {property.listAgentOfficePhone && (
+                    <div className="detail-page__agent-item">
+                      <span className="detail-page__agent-label">Office Phone</span>
+                      <span className="detail-page__agent-value">{property.listAgentOfficePhone}</span>
+                    </div>
+                  )}
+                  {property.listAgentEmail && (
+                    <div className="detail-page__agent-item">
+                      <span className="detail-page__agent-label">Agent Email</span>
+                      <span className="detail-page__agent-value">{property.listAgentEmail}</span>
+                    </div>
+                  )}
+                  {property.listOfficeEmail && (
+                    <div className="detail-page__agent-item">
+                      <span className="detail-page__agent-label">Office Email</span>
+                      <span className="detail-page__agent-value">{property.listOfficeEmail}</span>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
-
-          {/* Listing Agent Information (placed on top of Description section) */}
-          {hasAgentInfo && (
-            <div className="detail-page__section" id="listing-agent-info">
-              <h3 className="detail-page__section-title">Listing Agent Information</h3>
-              <div className="detail-page__agent-grid">
-                {property.listAgentFullName && (
-                  <div className="detail-page__agent-item">
-                    <span className="detail-page__agent-label">Agent Name</span>
-                    <span className="detail-page__agent-value">{property.listAgentFullName}</span>
-                  </div>
-                )}
-                {property.listAgentDirectPhone && (
-                  <div className="detail-page__agent-item">
-                    <span className="detail-page__agent-label">Direct Phone</span>
-                    <span className="detail-page__agent-value">{property.listAgentDirectPhone}</span>
-                  </div>
-                )}
-                {property.listAgentOfficePhone && (
-                  <div className="detail-page__agent-item">
-                    <span className="detail-page__agent-label">Office Phone</span>
-                    <span className="detail-page__agent-value">{property.listAgentOfficePhone}</span>
-                  </div>
-                )}
-                {property.listAgentEmail && (
-                  <div className="detail-page__agent-item">
-                    <span className="detail-page__agent-label">Agent Email</span>
-                    <span className="detail-page__agent-value">{property.listAgentEmail}</span>
-                  </div>
-                )}
-                {property.listOfficeEmail && (
-                  <div className="detail-page__agent-item">
-                    <span className="detail-page__agent-label">Office Email</span>
-                    <span className="detail-page__agent-value">{property.listOfficeEmail}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
 
           {/* Description */}
           {property.description && (
@@ -270,12 +273,14 @@ function PropertyDetailPage() {
         </div>
       </div>
 
-      {/* Map */}
-      <PropertyMap
-        latitude={property.latitude}
-        longitude={property.longitude}
-        address={`${property.address}, ${property.city}, ${property.state}`}
-      />
+      {/* Map / Location */}
+      <div className="detail-page__section" id="property-location">
+        <PropertyMap
+          latitude={property.latitude}
+          longitude={property.longitude}
+          address={`${property.address}, ${property.city}, ${property.state}`}
+        />
+      </div>
 
       {/* Open Houses */}
       <div className="detail-page__section" id="open-houses">

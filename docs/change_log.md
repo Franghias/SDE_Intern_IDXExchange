@@ -667,3 +667,25 @@
 - **Verification:**
   - Executed full Vitest suite (`npx vitest run`): **84 passed (84 tests)** across **13 test files** with 100% success.
 - **Files**: `docs/TEST_GUIDE.md`, `frontend/src/stylesheets/IntroductionPage.css`, `frontend/src/stylesheets/PropertyDetailPage.css`, `frontend/src/stylesheets/FavoritesPage.css`, `frontend/src/stylesheets/ListingsPage.css`, `frontend/src/stylesheets/OpenHousesPage.css`, `frontend/src/stylesheets/ChatSearchPage.css`, `frontend/src/components/SortControls.jsx`, `frontend/src/stylesheets/SortControls.css`, `frontend/FLOW.md`, `FLOW.md`, `docs/FILE_GUIDE.md`, `docs/change_log.md`, `docs/decision_log.md`.
+
+#### 2026-08-30 — Mobile Detail Page Flow Reordering, Photo Swipe Navigation & Targeted Smooth Scrolling
+- **Frontend — Mobile Detail Page Flow Re-ordering (`PropertyDetailPage.jsx`, `PropertyDetailPage.css`):**
+  - Re-ordered the detail page layout on mobile screens ($\le 900\text{px}$) into the requested reading order using `display: contents` and flexbox `order`:
+    1. `order: 1` — **Picture / Gallery** (`PropertyImageGallery`)
+    2. `order: 2` — **Open House Schedule** (`#open-houses`)
+    3. `order: 3` — **Overall Content** (`.detail-page__main-info`: Price, Save favorite toggle, Status badge, Address, Stats box, Listing Agent card)
+    4. `order: 4` — **Property Details** (`#property-details`)
+    5. `order: 5` — **Description** (`#property-description`)
+    6. `order: 6` — **Location / Map** (`#property-location` / `PropertyMap`)
+  - Preserved standard 2-column desktop layout on viewports $>900\text{px}$ without layout regression.
+- **Frontend — Mobile Photo Gallery Swiping & Navigation Controls (`PropertyImageGallery.jsx`, `PropertyImageGallery.css`):**
+  - Implemented touch swipe gestures (`onTouchStart`, `onTouchEnd`) on `.gallery__main` and full-screen `.lightbox` to advance or rewind photos via left/right finger swipes ($\ge 35\text{px}$ threshold).
+  - Added overlay previous/next navigation buttons (`.gallery__nav-btn--prev`, `.gallery__nav-btn--next`) on main image with `e.stopPropagation()` for single-tap navigation.
+  - Added photo counter chip (`📷 X / Total`) and expand hint overlays.
+  - Enhanced thumbnail strip with `scroll-snap-type: x mandatory` and auto-scrolling active thumbnail into view via `scrollIntoView`.
+- **Frontend — Targeted Smooth Scrolling Automation (`*.jsx`):**
+  - Updated `handleSortChange()` in `ListingsPage.jsx`, `FavoritesPage.jsx`, and `OpenHousesPage.jsx` to smoothly scroll directly to `#sort-controls` instead of the top of the window.
+  - Updated `handlePageChange()` in `ListingsPage.jsx`, `FavoritesPage.jsx`, `OpenHousesPage.jsx`, and `ChatSearchPage.jsx` to smoothly scroll directly to `#pagination-top`.
+- **Verification:**
+  - Full Vitest suite executed (`npx vitest run`): **84 passed (84 tests)** across **13 test files** with 100% success rate.
+- **Files**: `frontend/src/pages/PropertyDetailPage.jsx`, `frontend/src/stylesheets/PropertyDetailPage.css`, `frontend/src/components/PropertyImageGallery.jsx`, `frontend/src/stylesheets/PropertyImageGallery.css`, `frontend/src/pages/ListingsPage.jsx`, `frontend/src/pages/FavoritesPage.jsx`, `frontend/src/pages/OpenHousesPage.jsx`, `frontend/src/pages/ChatSearchPage.jsx`, `frontend/src/test/setup.js`, `frontend/FLOW.md`, `FLOW.md`, `docs/change_log.md`, `docs/decision_log.md`.

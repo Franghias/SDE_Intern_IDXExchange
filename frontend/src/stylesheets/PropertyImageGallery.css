@@ -9,6 +9,8 @@
   overflow: hidden;
   cursor: pointer;
   background: var(--color-skeleton);
+  user-select: none;
+  touch-action: pan-y pinch-zoom;
 }
 
 .gallery__main-image {
@@ -23,15 +25,76 @@
   transform: scale(1.02);
 }
 
-.gallery__expand-hint {
+/* Nav arrow buttons on main image */
+.gallery__nav-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(8px);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  font-size: 1.5rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  transition: background 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
+  opacity: 0.85;
+}
+
+.gallery__nav-btn:hover {
+  background: rgba(0, 0, 0, 0.85);
+  transform: translateY(-50%) scale(1.08);
+  opacity: 1;
+}
+
+.gallery__nav-btn--prev {
+  left: 12px;
+}
+
+.gallery__nav-btn--next {
+  right: 12px;
+}
+
+/* Overlay bottom metadata: counter & expand hint */
+.gallery__overlay-meta {
   position: absolute;
   bottom: 12px;
+  left: 12px;
   right: 12px;
-  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.gallery__counter-badge {
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(8px);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.gallery__expand-hint {
+  margin-left: auto;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(8px);
   color: #fff;
   font-size: 0.8rem;
   padding: 4px 10px;
   border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
   opacity: 0;
   transition: opacity 0.2s ease;
 }
@@ -47,6 +110,8 @@
   margin-top: 12px;
   overflow-x: auto;
   padding-bottom: 6px;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
   scrollbar-color: var(--color-border) transparent;
 }
@@ -183,6 +248,21 @@
 
 /* Mobile adjustments */
 @media (max-width: 640px) {
+  .gallery__nav-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 1.3rem;
+    opacity: 0.95;
+  }
+
+  .gallery__nav-btn--prev {
+    left: 8px;
+  }
+
+  .gallery__nav-btn--next {
+    right: 8px;
+  }
+
   .gallery__thumb {
     width: 56px;
     height: 40px;

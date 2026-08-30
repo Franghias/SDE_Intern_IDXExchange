@@ -430,12 +430,21 @@ function OpenHousesPage() {
       openHousesCache.sortCriteria = newCriteria;
       openHousesCache.filterFormValues = filterFormValues;
     }
+    const sortElem = document.getElementById('sort-controls');
+    if (sortElem) {
+      sortElem.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
     loadOpenHouses(activeRange, 1, itemsPerPage, filterFormValues, newCriteria);
   }
 
   function handlePageChange(page) {
     setCurrentPage(page);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const pagElem = document.getElementById('pagination-top');
+    if (pagElem) {
+      pagElem.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
     loadOpenHouses(activeRange, page, itemsPerPage, activePropertyFilters, sortCriteria);
   }
 

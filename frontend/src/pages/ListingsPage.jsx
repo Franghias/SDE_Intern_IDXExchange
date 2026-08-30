@@ -114,7 +114,12 @@ function ListingsPage() {
 
   function handlePageChange(page) {
     setCurrentPage(page);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const pagElem = document.getElementById('pagination-top');
+    if (pagElem) {
+      pagElem.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
     loadProperties(activeFilters, page, itemsPerPage, sortCriteria);
   }
 
@@ -132,6 +137,10 @@ function ListingsPage() {
     if (listingsCache) {
       listingsCache.sortCriteria = newCriteria;
       listingsCache.filterFormValues = filterFormValues;
+    }
+    const sortElem = document.getElementById('sort-controls');
+    if (sortElem) {
+      sortElem.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
     loadProperties(filterFormValues, 1, itemsPerPage, newCriteria);
   }

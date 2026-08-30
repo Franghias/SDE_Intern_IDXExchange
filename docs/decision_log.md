@@ -761,3 +761,20 @@
 - Added a title header (`⇅ Sort Listings`) with an active sort counter badge (`X active`).
 - Transformed mobile layout into a compact **2-column responsive grid** (`repeat(2, 1fr)`) with uppercase labels above inputs and subtle active border glow (`.sort-controls__select--active`).
 - Redesigned action buttons on mobile into a full-width side-by-side flex layout with 42px touch tap targets.
+
+#### 2026-08-30 — Mobile Detail Page Sequence, Photo Swipe Navigation & Targeted Smooth Scrolling
+
+**Decision: CSS `display: contents` and Flexbox `order` for Mobile Detail Flow (`PropertyDetailPage.jsx`, `PropertyDetailPage.css`)**
+- On desktop, property details use a 2-column layout (Left: Gallery + Details; Right: Main Info + Description; Bottom: Map + Open Houses).
+- Mobile requirements required a specialized single-column sequence: 1. Picture $\rightarrow$ 2. Open House $\rightarrow$ 3. Overall Content $\rightarrow$ 4. Property Details $\rightarrow$ 5. Description $\rightarrow$ 6. Location Map.
+- Rather than duplicating DOM elements with conditional React rendering, `.detail-page__layout`, `.detail-page__gallery-col`, and `.detail-page__info-col` use `display: contents;` on screens $\le 900\text{px}$, allowing `.detail-page` to assign numeric `order` values directly to the sections. Desktop layout remains fully intact with zero layout shifts.
+
+**Decision: Native Touch Swipe Gestures & Overlay Arrow Controls (`PropertyImageGallery.jsx`, `PropertyImageGallery.css`)**
+- Mobile users frequently browse photo galleries by swiping left and right.
+- Added `onTouchStart` and `onTouchEnd` gesture listeners calculating horizontal delta ($\Delta X$) with a $35\text{px}$ threshold on both the main gallery image and the full-screen lightbox.
+- Added overlay previous/next arrows and a photo counter badge (`📷 X / Total`) with `e.stopPropagation()` so users can also tap or swipe without accidentally opening the lightbox.
+- Enhanced thumbnail strip with `scroll-snap-type: x mandatory` and automatic `scrollIntoView` centering for the active thumbnail.
+
+**Decision: Targeted Element Scrolling over Window Top Scrolling (`*.jsx`)**
+- Previously, applying sort or changing pages dispatched `window.scrollTo({ top: 0, behavior: 'smooth' })`, which pulled the user's viewport all the way above headers and filters on long pages.
+- Replaced with element-level smooth scrolling targeting `#sort-controls` on sort changes and `#pagination-top` on pagination page transitions, keeping the user anchored to relevant content.

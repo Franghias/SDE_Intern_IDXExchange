@@ -92,11 +92,18 @@ The application uses a split-screen dashboard architecture (`App.jsx` + `Sidebar
 - **User Action**: View complete details of a specific property.
 - **User Flow**:
   1. Route fetches single property via `GET /api/properties/:id` and open house schedules via `GET /api/properties/:id/openhouses`.
-  2. **Gallery**: Main photo display with thumbnail bar and full-screen Lightbox modal.
+  2. **Gallery**: Main photo display with touch swipe gestures (swipe left/right on mobile), overlay prev/next buttons, photo counter badge (`📷 X / Total`), scrollable thumbnail strip with auto-centering, and full-screen Lightbox modal.
   3. **Stats**: Beds, Baths, Square Feet, and Year Built displayed with centered SVG icons in dark container boxes.
   4. **Listing Agent Information**: Dedicated contact card sitting directly on top of Description section when listing agent details exist (`ListAgentFullName`, phones, emails).
   5. **Map**: Renders Google Maps Embed iframe with a header placing the "Location" title on the left and a "📍 Get Directions" link (opening Google Maps using `L_Address` street address) on the right side of the same line.
   6. **Open House Schedule**: Lists upcoming and past open houses with status badges (`Active`, `Upcoming`, `Expired`).
+  7. **Mobile Flow Sequence ($\le 900\text{px}$)**: Arranged via CSS `display: contents` and flexbox `order` in top-to-bottom order:
+     - 1. Picture (`PropertyImageGallery` with swipe & nav arrows)
+     - 2. Open House (`#open-houses`)
+     - 3. Overall Content (Price, Save button, Status badge, Address, Stats, Listing Agent card)
+     - 4. Property Details (`#property-details`)
+     - 5. Description (`#property-description`)
+     - 6. Location Map (`#property-location` / `PropertyMap`)
 
 ---
 
