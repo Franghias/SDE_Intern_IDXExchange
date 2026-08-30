@@ -1,6 +1,8 @@
 /* ===== AI Chatbot Search Page ===== */
 .chat-search-page {
   padding: 40px 40px 48px;
+  max-width: 1600px;
+  margin: 0 auto;
 }
 
 /* Page header */
@@ -43,7 +45,7 @@
 /* Property Grid */
 .chat-search-page__grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 28px;
 }
 

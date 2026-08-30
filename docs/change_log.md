@@ -642,3 +642,31 @@
 - **Verification:**
   - All 84 frontend unit tests (13 test suites) and 96 backend unit tests (5 test suites) pass cleanly via `npm test` with zero regressions.
 - **Files**: `frontend/src/stylesheets/Sidebar.css`, `frontend/src/stylesheets/App.css`, `frontend/src/stylesheets/ListingsPage.css`, `frontend/src/stylesheets/PropertyCard.css`, `frontend/src/stylesheets/PropertyFilters.css`, `frontend/src/stylesheets/SortControls.css`, `frontend/src/stylesheets/Pagination.css`, `frontend/src/stylesheets/PropertyDetailPage.css`, `frontend/src/stylesheets/OpenHousesPage.css`, `frontend/src/stylesheets/ChatAssistant.css`, `frontend/src/stylesheets/FavoritesPage.css`, `docs/decision_log.md`, `docs/change_log.md`, `docs/FILE_GUIDE.md`, `README.md`, `frontend/README.md`.
+
+#### 2026-08-30 — Page Container Centering, Responsive Auto-Fill Grid Scaling & Mobile Sort Controls Redesign
+- **Frontend — Resolved Desktop Right-Side Empty Gaps & Centered Page Containers (`*.css`):**
+  - Diagnosed uncentered right-side empty spaces on wide desktop monitors: confirmed mobile media queries were not the cause, but rather uncentered fixed `max-width` page containers left-aligning inside the `1fr` content canvas (`.app-content`).
+  - Added `margin: 0 auto;` and capped maximum widths across all page containers:
+    - `IntroductionPage.css`: Centered `.intro-page` (`max-width: 960px; margin: 0 auto;`).
+    - `PropertyDetailPage.css`: Centered `.detail-page` (`max-width: 1200px; margin: 0 auto;`).
+    - `FavoritesPage.css`: Centered `.favorites-page` (`max-width: 1400px; margin: 0 auto;`).
+    - `ListingsPage.css`: Added `max-width: 1600px; margin: 0 auto;` to `.listings-page`.
+    - `OpenHousesPage.css`: Added `max-width: 1600px; margin: 0 auto;` to `.openhouses-page`.
+    - `ChatSearchPage.css`: Added `max-width: 1600px; margin: 0 auto;` to `.chat-search-page`.
+- **Frontend — Dynamic Responsive Grid Auto-Filling (`*.css`):**
+  - Replaced rigid 3-column layout grids (`repeat(3, 1fr)`) with responsive auto-filling (`repeat(auto-fill, minmax(320px, 1fr))`) across `ListingsPage.css`, `OpenHousesPage.css`, `ChatSearchPage.css`, and `FavoritesPage.css`, dynamically supporting 1 to 4 columns based on viewport width without stretched cards or empty voids.
+- **Frontend — Mobile Sort Controls Redesign (`SortControls.jsx`, `SortControls.css`, `ListingsPage.css`):**
+  - Replaced 5-row stacked lines on mobile with a compact, modern **2-column responsive grid** (`repeat(2, 1fr)`).
+  - Enclosed sort controls inside a themed surface card (`background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 14px; padding: 16px 20px;`) matching `PropertyFilters`.
+  - Added header with section title (`⇅ Sort Listings`) and live active sort counter badge (`X active`).
+  - Added `.sort-controls__field--active` and `.sort-controls__select--active` CSS classes for subtle primary border glow when a field has an active direction.
+  - Replaced desktop action button alignment with full-width side-by-side touch buttons (`Apply Sort` & `Clear`) with 42px touch tap targets on mobile.
+  - Cleaned up top pagination spacing (`#pagination-top`) in `ListingsPage.css` to standard `20px` margin.
+- **Documentation — Project Markdown Documentation Sync:**
+  - Updated `docs/FILE_GUIDE.md` (component description and stylesheet table entry for `SortControls`).
+  - Updated `frontend/FLOW.md` (Section 2 desktop centered layout and mobile view specifications).
+  - Updated root `FLOW.md` (Section 2.B multi-column sorting description).
+  - Updated `docs/change_log.md` and `docs/decision_log.md`.
+- **Verification:**
+  - Executed full Vitest suite (`npx vitest run`): **84 passed (84 tests)** across **13 test files** with 100% success.
+- **Files**: `frontend/src/stylesheets/IntroductionPage.css`, `frontend/src/stylesheets/PropertyDetailPage.css`, `frontend/src/stylesheets/FavoritesPage.css`, `frontend/src/stylesheets/ListingsPage.css`, `frontend/src/stylesheets/OpenHousesPage.css`, `frontend/src/stylesheets/ChatSearchPage.css`, `frontend/src/components/SortControls.jsx`, `frontend/src/stylesheets/SortControls.css`, `frontend/FLOW.md`, `FLOW.md`, `docs/FILE_GUIDE.md`, `docs/change_log.md`, `docs/decision_log.md`.

@@ -612,14 +612,17 @@ The entire card is an `<a>` tag with `target="_blank"` — clicking opens the de
 ---
 
 ### `frontend/src/components/SortControls.jsx`
-**What it does:** A multi-column sort control panel showing all 5 sortable fields with direction dropdowns.
+**What it does:** A multi-column sort control panel enclosed in a themed card, showing an active sort badge, section title (`⇅ Sort Listings`), and all 5 sortable fields with direction dropdowns.
 
 **How it works:**
-- Displays a row of 5 sort fields: Price, Date Listed, Sqft, Beds, Baths.
+- Renders a header with section title and live active counter badge (`X active`) indicating how many sort criteria are currently chosen.
+- Displays 5 sort fields: Price, Date Listed, Sqft, Beds, Baths.
 - Each field has a direction dropdown: "—" (not sorted), "Low to High" / "High to Low" (or "Oldest First" / "Newest First" for Date).
-- User sets directions for whichever fields they want, then clicks "Sort".
-- On "Sort" click, collects all fields with non-empty directions into a `sortCriteria` array (e.g., `[{ field: 'price', order: 'asc' }, { field: 'date', order: 'desc' }]`) and calls `onChange(newCriteria)`.
+- Automatically applies `.sort-controls__field--active` and `.sort-controls__select--active` highlighting when a field has an active selection.
+- User sets directions for whichever fields they want, then clicks "Apply Sort".
+- On "Apply Sort" click, collects all fields with non-empty directions into a `sortCriteria` array (e.g., `[{ field: 'price', order: 'asc' }, { field: 'date', order: 'desc' }]`) and calls `onChange(newCriteria)`.
 - "Clear" button resets all dropdowns and calls `onChange([])`.
+- On mobile devices ($\le 768\text{px}$), fields transition into a compact 2-column responsive grid with full-width side-by-side action buttons and touch-friendly tap targets.
 
 ---
 
@@ -757,7 +760,7 @@ Each component and page has a corresponding CSS file in `frontend/src/stylesheet
 | `PropertyImageGallery.css` | Main image, thumbnail strip, lightbox modal, lightbox navigation, mobile touch scrolling |
 | `PropertyMap.css` | Map iframe container, directions link |
 | `PropertyFilters.css` | Filter form grid layout, input styling, mobile touch action buttons (`min-height: 44px`), chatbot highlight animation (`@keyframes chatFieldHighlight`) |
-| `SortControls.css` | Sort field dropdowns, Sort/Clear buttons, mobile touch targets |
+| `SortControls.css` | Themed card container, active sort badge, responsive 2-column mobile grid, active selection glow highlights, full-width mobile action buttons |
 | `Pagination.css` | Page number buttons, prev/next buttons, active page, ellipsis, mobile touch button sizes |
 | `ChatAssistant.css` | Chat panel toggle, message bubbles (user vs. assistant), input area, loading dots animation, mobile touch inputs |
 | `IntroductionPage.css` | Hero banner, feature cards, CTA button |

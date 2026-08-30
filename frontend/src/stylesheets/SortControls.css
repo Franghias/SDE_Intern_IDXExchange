@@ -1,53 +1,95 @@
 /* ===== Sort Controls ===== */
 .sort-controls {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   display: flex;
-  align-items: flex-end;
-  gap: 12px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 14px;
   width: 100%;
 }
 
-/* Fields row — all 5 sort fields side by side */
-.sort-controls__fields {
+/* Header with Title and Active Badge */
+.sort-controls__header {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
+  justify-content: space-between;
   gap: 10px;
-  flex-wrap: wrap;
-  flex: 1;
-  min-width: 0;
+}
+
+.sort-controls__title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  letter-spacing: -0.01em;
+}
+
+.sort-controls__title-icon {
+  font-size: 1rem;
+  color: var(--color-primary);
+}
+
+.sort-controls__active-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  background: rgba(99, 102, 241, 0.12);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  border-radius: 12px;
+  padding: 2px 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Fields row — desktop flex layout */
+.sort-controls__fields {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  width: 100%;
 }
 
 /* Individual field group */
 .sort-controls__field {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
   min-width: 0;
 }
 
 .sort-controls__label {
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   color: var(--color-text-muted);
-  font-weight: 500;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .sort-controls__select {
-  padding: 6px 28px 6px 10px;
-  font-size: 0.82rem;
+  width: 100%;
+  padding: 8px 30px 8px 12px;
+  font-size: 0.85rem;
   font-family: var(--font-family);
   color: var(--color-text);
-  background: var(--color-surface);
+  background: var(--color-bg);
   border: 1px solid var(--color-border);
-  border-radius: 8px;
+  border-radius: 9px;
   cursor: pointer;
   appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='%238888a0'%3E%3Cpath d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 8px center;
+  background-position: right 10px center;
   outline: none;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-  min-width: 120px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 }
 
 .sort-controls__select:focus {
@@ -55,93 +97,140 @@
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
 }
 
+.sort-controls__select--active {
+  border-color: rgba(99, 102, 241, 0.6);
+  background-color: rgba(99, 102, 241, 0.05);
+  color: var(--color-primary-hover);
+  font-weight: 500;
+}
+
 /* Action buttons */
 .sort-controls__actions {
   display: flex;
   align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 4px;
 }
 
 .sort-controls__sort-btn {
-  padding: 6px 18px;
-  font-size: 0.85rem;
+  padding: 8px 20px;
+  font-size: 0.88rem;
   font-weight: 600;
   font-family: var(--font-family);
   color: #fff;
   background: var(--color-primary);
   border: none;
-  border-radius: 8px;
+  border-radius: 9px;
   cursor: pointer;
-  transition: filter 0.2s ease, transform 0.15s ease;
+  transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .sort-controls__sort-btn:hover:not(:disabled) {
-  filter: brightness(1.1);
+  background: var(--color-primary-hover);
   transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
 }
 
 .sort-controls__sort-btn:disabled {
-  opacity: 0.4;
+  opacity: 0.45;
   cursor: not-allowed;
+  transform: none;
 }
 
 .sort-controls__clear-btn {
-  padding: 6px 12px;
-  font-size: 0.82rem;
+  padding: 8px 16px;
+  font-size: 0.85rem;
   font-weight: 500;
   font-family: var(--font-family);
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   background: transparent;
   border: 1px solid var(--color-border);
-  border-radius: 8px;
+  border-radius: 9px;
   cursor: pointer;
-  transition: color 0.15s ease, border-color 0.15s ease;
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .sort-controls__clear-btn:hover {
   color: var(--color-text);
   border-color: var(--color-text-muted);
+  background: var(--color-surface-hover);
 }
 
-@media (max-width: 900px) {
+/* ===== Responsive Breakpoints ===== */
+
+/* Tablet (max-width: 1024px) */
+@media (max-width: 1024px) {
+  .sort-controls__fields {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Mobile & Phablet (max-width: 768px) */
+@media (max-width: 768px) {
   .sort-controls {
-    flex-direction: column;
-    align-items: stretch;
+    padding: 14px 14px;
+    border-radius: 12px;
     gap: 12px;
+    margin-bottom: 20px;
   }
 
   .sort-controls__fields {
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .sort-controls__field {
-    flex-direction: row;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .sort-controls__label {
-    min-width: 80px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
   }
 
   .sort-controls__select {
-    flex: 1;
-    min-height: 40px;
+    min-height: 42px;
     font-size: 0.88rem;
+    padding: 8px 28px 8px 10px;
   }
 
   .sort-controls__actions {
-    justify-content: flex-start;
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    gap: 8px;
+    margin-top: 4px;
+  }
+
+  .sort-controls__sort-btn {
+    flex: 1;
+    min-height: 42px;
+    font-size: 0.9rem;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .sort-controls__clear-btn {
+    flex: 1;
+    min-height: 42px;
+    font-size: 0.9rem;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* Small mobile (max-width: 420px) */
+@media (max-width: 420px) {
+  .sort-controls__fields {
+    grid-template-columns: repeat(2, 1fr);
     gap: 8px;
   }
 
-  .sort-controls__sort-btn,
-  .sort-controls__clear-btn {
-    min-height: 40px;
-    padding: 8px 16px;
-    font-size: 0.88rem;
-    -webkit-tap-highlight-color: transparent;
+  .sort-controls__field:last-child:nth-child(odd) {
+    grid-column: span 2;
+  }
+
+  .sort-controls__label {
+    font-size: 0.72rem;
+  }
+
+  .sort-controls__select {
+    font-size: 0.82rem;
   }
 }

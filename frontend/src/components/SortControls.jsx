@@ -88,11 +88,26 @@ function SortControls({ sortCriteria, onChange }) {
 
   return (
     <div className="sort-controls" id="sort-controls">
+      <div className="sort-controls__header">
+        <span className="sort-controls__title">
+          <span className="sort-controls__title-icon">⇅</span> Sort Listings
+        </span>
+        {hasSelections && (
+          <span className="sort-controls__active-badge">
+            {SORT_FIELDS.filter((f) => selections[f.value] !== '').length} active
+          </span>
+        )}
+      </div>
+
       <div className="sort-controls__fields">
         {SORT_FIELDS.map((f) => {
           const options = f.value === 'date' ? DIRECTIONS.date : DIRECTIONS.default;
+          const isFieldActive = selections[f.value] !== '';
           return (
-            <div className="sort-controls__field" key={f.value}>
+            <div
+              className={`sort-controls__field ${isFieldActive ? 'sort-controls__field--active' : ''}`}
+              key={f.value}
+            >
               <label
                 htmlFor={`sort-${f.value}`}
                 className="sort-controls__label"
@@ -101,7 +116,7 @@ function SortControls({ sortCriteria, onChange }) {
               </label>
               <select
                 id={`sort-${f.value}`}
-                className="sort-controls__select"
+                className={`sort-controls__select ${isFieldActive ? 'sort-controls__select--active' : ''}`}
                 value={selections[f.value]}
                 onChange={(e) => handleDirectionChange(f.value, e.target.value)}
               >
@@ -122,7 +137,7 @@ function SortControls({ sortCriteria, onChange }) {
           onClick={handleSort}
           disabled={!hasSelections && sortCriteria.length === 0}
         >
-          Sort
+          Apply Sort
         </button>
         {(hasSelections || sortCriteria.length > 0) && (
           <button

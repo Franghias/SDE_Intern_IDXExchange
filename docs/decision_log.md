@@ -742,3 +742,22 @@
 **Decision: Horizontal Touch Scroll Container for Open Houses Calendar (`OpenHousesPage.css`)**
 - Wrapped `react-big-calendar` in an `overflow-x: auto; -webkit-overflow-scrolling: touch` container on screens $\le 640\text{px}$.
 - Allows smooth horizontal swiping across the monthly calendar grid without forcing document-level horizontal scroll.
+
+#### 2026-08-30 — Page Container Centering, Responsive Grid Auto-Filling & Mobile Sort Redesign
+
+**Decision: Centering Page Containers with `margin: 0 auto` and Capped Max-Widths (`*.css`)**
+- On desktop monitors (>1200px), `.app-layout` allocates `260px` for `.sidebar` and `1fr` (~1180px–1660px+) for `.app-content`.
+- When page containers (`.intro-page`, `.detail-page`, `.favorites-page`, `.listings-page`, `.openhouses-page`, `.chat-search-page`) specified a `max-width` (960px–1600px) without `margin: 0 auto`, elements defaulted to left alignment, leaving wide empty dark-space gaps on the right side of the screen.
+- Applied `margin: 0 auto;` across all page containers so content is centered harmoniously within the content canvas across all monitor resolutions.
+
+**Decision: Dynamic Auto-Filling Grid Columns (`repeat(auto-fill, minmax(320px, 1fr))`) over Hardcoded 3-Column Templates**
+- Hardcoded 3-column definitions (`repeat(3, 1fr)`) stretched cards unnaturally on ultra-wide screens and squeezed them on intermediate widths (900px–1200px).
+- Replaced with `grid-template-columns: repeat(auto-fill, minmax(320px, 1fr))` across `ListingsPage.css`, `OpenHousesPage.css`, `ChatSearchPage.css`, and `FavoritesPage.css`.
+- The browser automatically calculates the optimal column count (1 to 4 columns) based on available container width, filling space gracefully.
+
+**Decision: Card Enclosure and Responsive 2-Column Grid for Sort Controls (`SortControls.jsx` & `SortControls.css`)**
+- Previously, `SortControls` rendered as a loose row of dropdowns that collapsed into 5 tall, stacked rows on mobile screens ($\le 768\text{px}$), creating a cluttered vertical layout.
+- Wrapped `SortControls` in a themed surface card (`background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 14px; padding: 16px 20px;`) matching `PropertyFilters`.
+- Added a title header (`⇅ Sort Listings`) with an active sort counter badge (`X active`).
+- Transformed mobile layout into a compact **2-column responsive grid** (`repeat(2, 1fr)`) with uppercase labels above inputs and subtle active border glow (`.sort-controls__select--active`).
+- Redesigned action buttons on mobile into a full-width side-by-side flex layout with 42px touch tap targets.
