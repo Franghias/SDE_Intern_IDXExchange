@@ -690,16 +690,23 @@
   - Full Vitest suite executed (`npx vitest run`): **84 passed (84 tests)** across **13 test files** with 100% success rate.
 - **Files**: `frontend/src/pages/PropertyDetailPage.jsx`, `frontend/src/stylesheets/PropertyDetailPage.css`, `frontend/src/components/PropertyImageGallery.jsx`, `frontend/src/stylesheets/PropertyImageGallery.css`, `frontend/src/pages/ListingsPage.jsx`, `frontend/src/pages/FavoritesPage.jsx`, `frontend/src/pages/OpenHousesPage.jsx`, `frontend/src/pages/ChatSearchPage.jsx`, `frontend/src/test/setup.js`, `frontend/FLOW.md`, `FLOW.md`, `docs/change_log.md`, `docs/decision_log.md`.
 
-#### 2026-08-30 — Backend Render CORS Security Hardening & Vercel Origin Whitelisting
+#### 2026-08-30 — Backend Render CORS Security Hardening, Anti-Scraping Rate Limiting & Origin Whitelisting
 - **Backend — Secure Origin-Whitelisting CORS Middleware (`backend/src/app.js`, `backend/.env.example`):**
   - Replaced open `cors()` middleware with restrictive whitelist validation supporting canonical production domain (`https://propertysearchsdeintern.vercel.app`), specific preview deployment (`https://propertysearchsdeintern-hsujzxyf0-franghias-projects.vercel.app`), dynamic regex matching for all future Vercel preview branch deployments (`^https:\/\/propertysearchsdeintern.*\.vercel\.app$`), and local dev origins (`http://localhost:5173`, `http://localhost:3000`).
   - Added support for `ALLOWED_ORIGINS` environment variable override for custom staging/production domains.
   - Added centralized error handler responding with `403 Forbidden` and sanitized error message on unauthorized cross-origin requests.
-  - Added 4 automated unit tests in `backend/tests/health.test.js` validating production origin acceptance, preview origin acceptance, local dev acceptance, and third-party origin rejection (bringing backend test suite to 100 tests).
-- **Documentation — Cloud Deployment & Test Guide Updates:**
-  - Updated [`docs/CLOUD_DEPLOYMENT_GUIDE.md`](file:///c:/Users/User/Downloads/IDXExchange%20-%20SDE%20Intern/docs/CLOUD_DEPLOYMENT_GUIDE.md) Section 2 with `ALLOWED_ORIGINS` configuration.
-  - Updated [`docs/TEST_GUIDE.md`](file:///c:/Users/User/Downloads/IDXExchange%20-%20SDE%20Intern/docs/TEST_GUIDE.md) documenting 100 backend tests across 5 test suites.
+- **Backend — Tiered Anti-Scraping Rate Limiting (`backend/src/middleware/rateLimiter.js`, `backend/package.json`):**
+  - Integrated `express-rate-limit` providing tiered protection:
+    - **General API Limiter (`/api/`)**: Caps requests to 300 per 15-minute window per IP to stop automated bulk scrapers and DoS traffic.
+    - **AI Chat Limiter (`/api/chat`)**: Caps requests to 15 per minute per IP to protect OpenRouter API credits and avoid LLM token drain.
+  - Enabled `app.set('trust proxy', 1)` for accurate client IP identification behind Render / Vercel reverse proxies.
+  - Emits standard `RateLimit` draft-7 headers (`RateLimit`, `RateLimit-Policy`) and returns `429 Too Many Requests` JSON error payloads.
+- **Documentation & Test Suite Sync:**
+  - Added 5 automated unit tests in `backend/tests/health.test.js` validating origin acceptance, 403 CORS rejection, and draft-7 rate limit headers (bringing backend test suite to 101 tests).
+  - Updated [`docs/CLOUD_DEPLOYMENT_GUIDE.md`](file:///c:/Users/User/Downloads/IDXExchange%20-%20SDE%20Intern/docs/CLOUD_DEPLOYMENT_GUIDE.md) Section 2 with `ALLOWED_ORIGINS` and rate limiting notes.
+  - Updated [`docs/TEST_GUIDE.md`](file:///c:/Users/User/Downloads/IDXExchange%20-%20SDE%20Intern/docs/TEST_GUIDE.md) documenting 101 backend tests and 185 total tests.
+  - Updated [`docs/FILE_GUIDE.md`](file:///c:/Users/User/Downloads/IDXExchange%20-%20SDE%20Intern/docs/FILE_GUIDE.md) with `rateLimiter.js` component breakdown.
   - Updated `docs/change_log.md` and `docs/decision_log.md`.
 - **Verification:**
-  - 100 backend unit tests (5 test suites) and 84 frontend unit tests (13 test suites) pass cleanly via `npm test` with 100% success rate (184 total tests).
-- **Files**: `backend/src/app.js`, `backend/.env.example`, `backend/tests/health.test.js`, `docs/CLOUD_DEPLOYMENT_GUIDE.md`, `docs/TEST_GUIDE.md`, `docs/change_log.md`, `docs/decision_log.md`.
+  - 101 backend unit tests (5 test suites) and 84 frontend unit tests (13 test suites) pass cleanly via `npm test` with 100% success rate (185 total tests).
+- **Files**: `backend/package.json`, `backend/src/app.js`, `backend/src/middleware/rateLimiter.js`, `backend/.env.example`, `backend/tests/health.test.js`, `docs/CLOUD_DEPLOYMENT_GUIDE.md`, `docs/TEST_GUIDE.md`, `docs/FILE_GUIDE.md`, `docs/change_log.md`, `docs/decision_log.md`.

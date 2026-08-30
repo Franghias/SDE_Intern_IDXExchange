@@ -171,7 +171,8 @@ docker exec -i idx-mysql-local mysql -uroot -prootpassword rets < database/03_ad
 **Key dependencies:**
 - `express` — web framework.
 - `mysql2` — MySQL database driver with promise support.
-- `cors` — cross-origin resource sharing middleware.
+- `cors` — cross-origin resource sharing middleware with origin whitelisting.
+- `express-rate-limit` — IP-based rate limiting and anti-scraping protection middleware.
 - `dotenv` — loads `.env` file into `process.env`.
 
 **Key dev dependencies:**
@@ -197,6 +198,14 @@ docker exec -i idx-mysql-local mysql -uroot -prootpassword rets < database/03_ad
 5. A `logged` boolean guard prevents double-logging when both `finish` and `close` fire on the same response.
 
 **Why `process.hrtime.bigint()` instead of `Date.now()`:** `Date.now()` only has millisecond precision and can drift if the system clock is adjusted. `process.hrtime.bigint()` uses the OS monotonic clock with nanosecond precision, giving accurate sub-millisecond timing that is immune to clock adjustments.
+
+---
+
+### `backend/src/middleware/rateLimiter.js`
+**What it does:** Tiered rate limiting middleware providing anti-scraping protection and LLM token defense.
+- **`apiLimiter`**: Restricts all `/api/*` endpoints to 300 requests per 15-minute window per client IP.
+- **`chatLimiter`**: Restricts `/api/chat` to 15 requests per minute per client IP, preventing LLM token and API budget drainage.
+- Emits standard `RateLimit` draft-7 headers and returns `429 Too Many Requests` JSON error payloads when limits are exceeded.
 
 ---
 

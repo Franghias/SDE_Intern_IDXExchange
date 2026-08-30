@@ -119,3 +119,17 @@ describe('CORS Origin Security & Whitelisting', () => {
     expect(res.body.message).toContain('CORS blocked');
   });
 });
+
+describe('Rate Limiting & Anti-Scraping Defense', () => {
+  test('returns standard RateLimit draft-7 headers when rate limiting is enabled', async () => {
+    const res = await request(app)
+      .get('/api/health')
+      .set('x-test-ratelimit', 'true');
+
+    expect(res.status).toBe(200);
+    expect(res.headers).toHaveProperty('ratelimit');
+    expect(res.headers['ratelimit']).toContain('limit=300');
+    expect(res.headers['ratelimit']).toContain('remaining=');
+    expect(res.headers).toHaveProperty('ratelimit-policy');
+  });
+});

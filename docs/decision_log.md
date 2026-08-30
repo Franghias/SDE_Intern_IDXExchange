@@ -790,3 +790,11 @@
   4. Local development ports (`localhost:5173`, `localhost:3000`).
   5. Permission for requests with no `Origin` header (such as Vercel serverless edge rewrites proxying `/api/*`, server-to-server calls, curl, and health monitors).
 - Unauthorized origins are rejected with `403 Forbidden` and a sanitized error payload.
+
+**Decision: Tiered Anti-Scraping Rate Limiting & Reverse Proxy Trust (`backend/src/middleware/rateLimiter.js`)**
+- Direct public APIs without rate limits are vulnerable to automated scrapers executing bulk pagination loops and malicious bots flooding LLM chatbot endpoints to drain OpenRouter credits.
+- Implemented two-tiered rate limiting with `express-rate-limit`:
+  1. `apiLimiter`: 300 requests per 15-minute window for `/api/*` endpoints to prevent database connection exhaustion and mass data scraping.
+  2. `chatLimiter`: 15 requests per minute for `/api/chat` to protect LLM token quotas.
+- Enabled `app.set('trust proxy', 1)` on Express to ensure client IP addresses are correctly extracted from `X-Forwarded-For` headers behind Render's reverse proxy load balancers.
+- Uses standard IETF `draft-7` headers (`RateLimit`, `RateLimit-Policy`) for standards compliance.

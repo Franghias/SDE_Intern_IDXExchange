@@ -6,8 +6,8 @@ This document provides a comprehensive, file-by-file breakdown of **every test f
 
 ## 1. Testing Overview & Summary
 
-The project maintains **184 automated tests** with a 100% pass rate:
-- **Backend**: **100 tests** across **5 test suites** using **Jest** + **supertest**.
+The project maintains **185 automated tests** with a 100% pass rate:
+- **Backend**: **101 tests** across **5 test suites** using **Jest** + **supertest**.
 - **Frontend**: **84 tests** across **13 test suites** using **Vitest** + **React Testing Library** + **@testing-library/user-event**.
 - **Diagnostic Scripts**: **3 manual performance & benchmark scripts** for database query explain plans and LLM API measurement.
 
@@ -34,7 +34,7 @@ The backend test suite imports the Express `app` directly (from `backend/src/app
 
 ```
 backend/tests/
-├── health.test.js             # 9 tests  — Health check, database connectivity, & CORS whitelisting
+├── health.test.js             # 10 tests — Health check, database connectivity, CORS & rate limiting
 ├── properties.test.js         # 34 tests — Search, filter, multi-sort, pagination, SQL injection, & favorites
 ├── propertyDetail.test.js     # 24 tests — Single property, column selection, string formatting, & open houses
 ├── openhouses.test.js         # 24 tests — Open house listings, date ranges, INNER JOINs, & validation
@@ -43,9 +43,9 @@ backend/tests/
 
 ---
 
-### A. `backend/tests/health.test.js` (9 Tests)
+### A. `backend/tests/health.test.js` (10 Tests)
 
-**Target:** `GET /api/health` ([`backend/src/routes/health.js`](file:///c:/Users/User/Downloads/IDXExchange%20-%20SDE%20Intern/backend/src/routes/health.js)) & CORS Security ([`backend/src/app.js`](file:///c:/Users/User/Downloads/IDXExchange%20-%20SDE%20Intern/backend/src/app.js))  
+**Target:** `GET /api/health` ([`backend/src/routes/health.js`](file:///c:/Users/User/Downloads/IDXExchange%20-%20SDE%20Intern/backend/src/routes/health.js)), CORS Security ([`backend/src/app.js`](file:///c:/Users/User/Downloads/IDXExchange%20-%20SDE%20Intern/backend/src/app.js)), & Rate Limiting ([`backend/src/middleware/rateLimiter.js`](file:///c:/Users/User/Downloads/IDXExchange%20-%20SDE%20Intern/backend/src/middleware/rateLimiter.js))  
 **Mocking:** Replaces `backend/src/config/db.js` connection pool `query` method.
 
 | Test Scenario | Description & Assertion |
@@ -59,6 +59,7 @@ backend/tests/
 | `allows authorized Vercel preview deployment origin` | Verifies `Origin: https://propertysearchsdeintern-hsujzxyf0-franghias-projects.vercel.app` is permitted. |
 | `allows authorized local dev origins` | Verifies `Origin: http://localhost:5173` is permitted. |
 | `rejects unauthorized third-party origins` | Verifies `Origin: https://malicious-site.example.com` receives `403 Forbidden` with CORS blocked message. |
+| `returns standard RateLimit draft-7 headers` | Dispatches request with `x-test-ratelimit: true` and validates `RateLimit` (`limit=300, remaining=...`) and `RateLimit-Policy` headers. |
 
 ---
 
@@ -246,13 +247,14 @@ frontend/src/test/
 
 | Test Scenario | Validation |
 |---|---|
-| `renders main property info, stats, and description` | Mocks `fetchPropertyById` and verifies address, price, beds, baths, Square Feet, and description render. |
-| `renders map with directions link encoded with address` | Verifies Google Maps container and checks "📍 Get Directions" link URL is encoded with street address `L_Address`. |
-| `renders scheduled open houses when present` | Mocks `fetchOpenHouses` and asserts open house date cards and status badges render. |
-| `handles favorite save/unsave toggle button` | Clicks "Save" button, verifies localStorage favorite toggling, and checks UI update to "Saved". |
-| `renders listing agent contact card` | Verifies Listing Agent Information section renders agent name, phone, and email above description. |
 | `renders loading spinner while fetching` | Asserts `.detail-page__loading` spinner is visible before promises resolve. |
 | `renders error state on fetch failure` | Rejects API call and validates error boundary message and retry button. |
+| `renders main property info, stats, and description` | Mocks `fetchPropertyById` and verifies address, price, beds, baths, Square Feet, and description render. |
+| `renders listing agent contact card` | Verifies Listing Agent Information section renders agent name, phone, and email above description. |
+| `renders map with directions link encoded with address` | Verifies Google Maps container and checks "📍 Get Directions" link URL is encoded with street address `L_Address`. |
+| `renders dynamic Property Details grid` | Verifies RESO property attributes (Property Type, Flooring, Cooling, Amenities, Interior Features) render with Title Case labels. |
+| `renders scheduled open houses when present` | Mocks `fetchOpenHouses` and asserts open house date cards and status badges render. |
+| `handles favorite save/unsave toggle button` | Clicks "Save" button, verifies localStorage favorite toggling, and checks UI update to "Saved". |
 
 ---
 

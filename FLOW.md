@@ -116,7 +116,7 @@ The application uses a split-screen dashboard architecture (`App.jsx` + `Sidebar
              │ HTTP REST Requests (Vite proxy /api/* -> :5000)
              ▼
 ┌─────────────────────────┐
-│     Express Server      │ (middleware: cors, requestLogger with ms duration + X-Response-Time)
+│     Express Server      │ (middleware: origin-whitelisted cors, rateLimiter, requestLogger with ms duration + X-Response-Time)
 └────────────┬────────────┘
              │ Parameterized SQL queries (mysql2 pool)
              ▼

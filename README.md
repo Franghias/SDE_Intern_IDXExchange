@@ -43,7 +43,7 @@ A full-stack real estate listing platform with AI-assisted search filter assista
 │   │                                                             │
 │   └── /property/:id → PropertyDetailPage (opens in new tab)     │
 │                         ├── Save / Saved Favorite Button        │
-│                         ├── PropertyImageGallery (lightbox)     │
+│                         ├── PropertyImageGallery (swipe/lightbox)│
 │                         ├── Centered Stat Icons (Square Feet)   │
 │                         ├── Listing Agent Info Card             │
 │                         ├── PropertyDetails (dynamic grid)      │
@@ -69,6 +69,8 @@ A full-stack real estate listing platform with AI-assisted search filter assista
 │                    Express Backend (:5000)                       │
 │                                                                 │
 │   server.js → app.js                                            │
+│     ├── cors (origin whitelist & Vercel domain validation)      │
+│     ├── rateLimiter (apiLimiter 300/15m + chatLimiter 15/m)     │
 │     ├── requestLogger (middleware + high-res ms + X-Response-Time)│
 │     ├── /api/health       → health.js      → SELECT 1          │
 │     ├── /api/chat         → chat.js        → OpenRouter API    │
@@ -95,7 +97,7 @@ A full-stack real estate listing platform with AI-assisted search filter assista
 │     └── rets_openhouse (4,282 rows — open house events)         │
 │                                                                 │
 │   Imported from database/ SQL files on first container start    │
-│ └─────────────────────────────────────────────────────────────────┘
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ## Project Structure
@@ -108,10 +110,10 @@ IDXExchange/
 │   │   ├── app.js            # Express app (middleware + routes)
 │   │   ├── config/db.js      # MySQL connection pool
 │   │   ├── utils/logger.js   # Zero-dependency logger (URL redaction + error sanitization)
-│   │   ├── middleware/       # Request logger (URL query redaction + duration + X-Response-Time)
+│   │   ├── middleware/       # requestLogger & rateLimiter
 │   │   └── routes/           # health.js, properties.js, openhouses.js, chat.js
-│   ├── tests/                # Jest + Supertest (91 tests across 5 test suites)
-│   ├── .env                  # Backend env vars (LLM_API_KEY, DB vars)
+│   ├── tests/                # Jest + Supertest (101 tests across 5 test suites)
+│   ├── .env                  # Backend env vars (LLM_API_KEY, DB vars, ALLOWED_ORIGINS)
 │   └── package.json
 │
 ├── frontend/                 # React + Vite
@@ -121,7 +123,7 @@ IDXExchange/
 │   │   ├── api/              # API client (propertyApi, chatApi)
 │   │   ├── hooks/            # useFavorites hook (localStorage + cross-tab sync)
 │   │   ├── utils/            # parsePhotos, formatPrice, formatTime, formatDate, prefetchCache
-│   │   ├── test/             # Vitest setup + tests (76 tests across 12 suites)
+│   │   ├── test/             # Vitest setup + tests (84 tests across 13 suites)
 │   │   ├── stylesheets/      # All CSS stylesheets
 │   │   ├── components/       # UI components (Sidebar, PropertyCard, PropertyFilters, ChatAssistant, ErrorBoundary, etc.)
 │   │   └── pages/            # IntroductionPage, ListingsPage, ChatSearchPage, FavoritesPage, OpenHousesPage, PropertyDetailPage
@@ -145,6 +147,7 @@ IDXExchange/
 │   ├── LOCAL_RUN_GUIDE.md   # Dev vs Production local workflow & verification guide
 │   ├── CLOUD_DEPLOYMENT_GUIDE.md # Railway + Render + Vercel deployment guide
 │   ├── FILE_GUIDE.md        # Comprehensive file-by-file reference guide
+│   ├── TEST_GUIDE.md        # Comprehensive 185-test breakdown & diagnostic guide
 │   ├── change_log.md
 │   └── decision_log.md
 │
@@ -173,7 +176,7 @@ The Express server connects to MySQL using a connection pool (`db.js`). It expos
 - **`GET /api/properties/:id/openhouses`** — Fetches open house events from `rets_openhouse` joined with `rets_property`, adding server-side status logic (`active`, `expired`, `upcoming`)
 - **`GET /api/openhouses`** — Lists all open houses with optional `startDate`/`endDate` filtering, INNER JOIN with `rets_property` for property context, pagination (up to 500), and status computation
 
-Every request is logged by the `requestLogger` middleware with timestamp, method, URL, status code, duration in milliseconds, and attaches an `X-Response-Time` header.
+Every request is protected by origin-whitelisted CORS validation and tiered rate limiting (`apiLimiter` & `chatLimiter`), and logged by the `requestLogger` middleware with timestamp, method, URL, status code, duration in milliseconds, and attaches an `X-Response-Time` header.
 
 ### 3. Frontend (React + Vite)
 
@@ -184,7 +187,7 @@ The React app runs on port 3000 with a split-screen dashboard layout: a fixed si
 - `/search` — **Search Page** (property filters + multi-column sort + listings grid + pagination + photo carousels + favorite heart buttons)
 - `/favorites` — **Favorites Page** (view and manage favorited listings, with Remove All button, filters, sort, pagination, and instant card removal)
 - `/openhouses` — **Open Houses Page** (react-big-calendar with range selection, date range filter panel, open house cards with property details, pagination)
-- `/property/:id` — **Property Detail Page** (Save/Saved favorite button, photo gallery + lightbox, centered stat icons with Square Feet label, Listing Agent Information card above Description, dynamic details grid, Google Maps embed with same-line Get Directions address link, and open house schedule)
+- `/property/:id` — **Property Detail Page** (Save/Saved favorite button, photo gallery with touch swipe + lightbox, centered stat icons with Square Feet label, Listing Agent Information card above Description, dynamic details grid, Google Maps embed with same-line Get Directions address link, and open house schedule)
 
 Favorites state is managed globally by the custom `useFavorites` hook, which persists to `localStorage` and syncs across browser tabs in real time.
 
@@ -230,14 +233,14 @@ Open `http://localhost:3000` to see the property listings.
 ### 4. Run tests & performance benchmarks
 
 ```bash
-# Backend tests (95 tests across 5 suites)
+# Backend tests (101 tests across 5 suites)
 cd backend
 npm test
 
 # Query Performance & EXPLAIN Benchmark Suite
 npm run perf
 
-# Frontend tests (82 Vitest tests across 13 suites)
+# Frontend tests (84 Vitest tests across 13 suites)
 cd frontend
 npm test
 ```
@@ -263,11 +266,10 @@ npm test
 | `DB_PORT` / `MYSQLPORT` | MySQL port (default: `3306`) |
 | `MYSQL_URL` / `MYSQL_PUBLIC_URL` | Optional full connection URL string (Railway cloud / TCP proxy) |
 | `PORT` | Express server port (default: `5000`) |
+| `ALLOWED_ORIGINS` | Comma-separated CORS allowed origins (production/staging) |
 
 ### `frontend/.env` (Vite)
 
 | Variable | Description |
 |----------|-------------|
 | `VITE_GOOGLE_MAPS_API_KEY` | Google Maps API key (Maps Embed API enabled) |
-
-

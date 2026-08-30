@@ -1,12 +1,16 @@
 const express = require('express');
 const cors = require('cors');
 const requestLogger = require('./middleware/requestLogger');
+const { apiLimiter, chatLimiter } = require('./middleware/rateLimiter');
 const healthRouter = require('./routes/health');
 const propertiesRouter = require('./routes/properties');
 const openhousesRouter = require('./routes/openhouses');
 const chatRouter = require('./routes/chat');
 
 const app = express();
+
+// Trust reverse proxy (e.g. Render / Vercel load balancer) for accurate IP resolution
+app.set('trust proxy', 1);
 
 // Whitelist of allowed frontend origins for CORS
 const defaultOrigins = [
@@ -54,6 +58,10 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 app.use(requestLogger);
+
+// Rate limiting middleware
+app.use('/api/', apiLimiter);
+app.use('/api/chat', chatLimiter);
 
 // Routes
 app.use('/api/health', healthRouter);
